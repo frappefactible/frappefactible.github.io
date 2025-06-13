@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Biblioteca Cinematográfica</title>
+    <!-- AÑADE ESTA LÍNEA PARA INCLUIR ANIME.JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    <!-- Iconos de Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+    <div class="steam-container">
+        <!-- Barra de Navegación Superior -->
+        <header class="top-bar">
+            <div class="logo">Cartelera de FACTIBLE</div>
+            <nav>
+                <a href="#">TIENDA</a>
+                <a href="#" class="active">BIBLIOTECA</a>
+                <a href="#">COMUNIDAD</a>
+            </nav>
+        </header>
+
+        <div class="library-body">
+            <!-- Barra Lateral con la lista de títulos -->
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <input type="text" placeholder=" Buscar...">
+                </div>
+                <ul id="media-list" class="media-list">
+                    <!-- La lista se generará dinámicamente con JavaScript -->
+                </ul>
+            </aside>
+
+            <!-- Contenido Principal con la cuadrícula de pósters -->
+            <main class="grid-view">
+                <div class="grid-header">
+                    <h2>TODOS LOS TÍTULOS <span id="media-count"></span></h2>
+                    <div class="sort-options">
+                        ORDENAR POR: Fase
+                    </div>
+                </div>
+                <div id="media-grid" class="media-grid">
+                    <!-- Los pósters se generarán dinámicamente con JavaScript -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
