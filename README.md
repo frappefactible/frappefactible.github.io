@@ -33,9 +33,3 @@ Esta experiencia visual ha sido construida con una combinación de tecnologías 
 La mejor forma de entender este proyecto no es leyendo sobre él, sino experimentándolo.
 
 ➡️ **[Haz clic aquí para ver la cartelera en acción](https://frappefactible.github.io)** ⬅️
-
-*(Recuerda reemplazar `tu-usuario` con tu nombre de usuario de GitHub para que el enlace funcione).*
-
----
-
-Espero que disfrutes del viaje a través de este universo tanto como yo he disfrutado creándolo.
