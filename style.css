@@ -196,28 +196,3 @@ body {
 .hidden {
     display: none !important;
 }
-
-/* --- Estilos para la Intro --- */
-#intro-screen {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background-color: #1b2838; /* Mismo fondo que la biblioteca */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999; /* Asegura que esté por encima de todo */
-}
-
-#intro-logo {
-    width: 300px; /* Ajusta el tamaño del logo como prefieras */
-    opacity: 0; /* Comienza invisible para la animación */
-}
-
-/* Ocultamos la biblioteca al principio */
-.steam-container {
-    visibility: hidden; /* La oculta pero mantiene su espacio */
-    opacity: 0;
-}
