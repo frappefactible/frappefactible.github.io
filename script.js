@@ -96,12 +96,76 @@ document.addEventListener('DOMContentLoaded', () => {
         { id: 62, title: '[ダンダダン] Dandadan (2024)', type: 'Anime', phase: 12, phaseName: 'Cazadores de Demonios. Sangre. Caos.', imageUrl: 'https://image.tmdb.org/t/p/w600_and_h900_bestv2/bOPmmOXj33bxVW5DoWabkCLn6vE.jpg' },
     ].map(item => ({ ...item, icon: typeToIcon[item.type] || 'fa-solid fa-question-circle' }));
 
+    const steamContainer = document.querySelector('.steam-container');
+    const introScreen = document.getElementById('intro-screen');
     const listContainer = document.getElementById('media-list');
     const gridContainer = document.getElementById('media-grid');
     const mediaCount = document.getElementById('media-count');
     const searchInput = document.querySelector('.sidebar-header input');
+    const mainTitle = document.getElementById('main-title');
     
     let currentSelectedId = null;
+
+        
+    // ==========================================================
+    // ===== NUEVA FUNCIÓN DE ANIMACIÓN DE INTRO ================
+    // ==========================================================
+    function runIntro() {
+        // Timeline principal para la intro
+        const introTimeline = anime.timeline({
+            easing: 'easeOutExpo',
+        });
+
+        // 1. Animación de "Glitch" y encendido del logo
+        introTimeline.add({
+            targets: '#intro-logo',
+            opacity: [0, 1],
+            scale: [1.2, 1],
+            rotate: [anime.random(-5, 5), 0],
+            duration: 1500,
+            // Pequeños "glitches" durante la aparición
+            translateX: [
+                { value: anime.random(-10, 10), duration: 100 },
+                { value: anime.random(-10, 10), duration: 100 },
+                { value: anime.random(-5, 5), duration: 800 },
+                { value: 0, duration: 500 }
+            ]
+        })
+        // 2. Pausa para que se vea el logo
+        .add({
+            targets: '#intro-logo',
+            duration: 1000 // 1 segundo de pausa
+        })
+        // 3. Animación de salida de la pantalla de intro
+        .add({
+            targets: '#intro-screen',
+            opacity: 0,
+            duration: 500,
+            easing: 'easeInExpo',
+            complete: () => {
+                // Cuando la intro termina, la eliminamos del DOM
+                introScreen.remove();
+            }
+        });
+
+        // 4. Hacemos que la biblioteca principal aparezca justo cuando la intro se va
+        introTimeline.add({
+            targets: steamContainer,
+            opacity: [0, 1],
+            visibility: ['hidden', 'visible'],
+            duration: 500
+        }, '-=500'); // '-=500' hace que esta animación empiece 500ms antes de que termine la anterior, para un fade perfecto
+
+        // 5. Una vez que la intro ha terminado, ejecutamos las animaciones de la biblioteca
+        introTimeline.finished.then(() => {
+            animateMainTitle();
+            animateGridIn();
+            if (mediaList.length > 0) {
+                handleSelect(mediaList[0].id);
+            }
+        });
+    }
+
 
     // --- GENERACIÓN DE LA INTERFAZ MEJORADA ---
 
@@ -197,6 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSelectedId = itemId;
     }
 
+    mainTitle.addEventListener('mouseover', animateMainTitle);
+
     // --- BLOQUE DE INTERACTIVIDAD ---
     listContainer.addEventListener('click', (event) => {
         const li = event.target.closest('li');
@@ -262,4 +328,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (mediaList.length > 0) {
         handleSelect(mediaList[0].id);
     }
+    runIntro(); // Ejecutar la nueva intro animada
 });
