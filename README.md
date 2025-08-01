@@ -2,6 +2,8 @@
 
 Esta es mi lista personal de peliculas la cual pienso ver en los proximos meses!
 
+[La he creado utilizando JavaScript, CSS y HTML]
+
 <h1>Lista de peliculas de <img style="text-align: center;" width="200" height="100" alt="fd1p8utcf8471-removebg-preview" src="https://github.com/frappefactible/frappefactible.github.io/blob/main/logos/factible_logo1.png"/></h1>
 
 no se que escribir aca pero poner GIFs es genial
