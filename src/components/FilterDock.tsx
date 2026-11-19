@@ -1,0 +1,112 @@
+export type FormatFilter = 'Todos' | 'Películas' | 'Series' | 'Animes'
+export type StatusFilter = 'Todos' | 'Por ver' | 'Visto'
+
+interface Props {
+  format: FormatFilter
+  onFormat: (value: FormatFilter) => void
+  status: StatusFilter
+  onStatus: (value: StatusFilter) => void
+  query: string
+  onQuery: (value: string) => void
+  favoritesOnly: boolean
+  onFavoritesOnly: (value: boolean) => void
+  count: number
+  onBeforeChange: () => void
+}
+
+const formats: FormatFilter[] = ['Todos', 'Películas', 'Series', 'Animes']
+const statuses: StatusFilter[] = ['Todos', 'Por ver', 'Visto']
+
+export function FilterDock({
+  format,
+  onFormat,
+  status,
+  onStatus,
+  query,
+  onQuery,
+  favoritesOnly,
+  onFavoritesOnly,
+  count,
+  onBeforeChange,
+}: Props) {
+  const change = <T,>(setter: (value: T) => void, value: T) => {
+    onBeforeChange()
+    setter(value)
+  }
+
+  return (
+    <div className="sticky top-16 z-40 -mx-5 mb-8 border-y border-white/10 bg-ink/85 px-5 py-3 backdrop-blur-xl md:-mx-10 md:px-10">
+      <div className="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {formats.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => change(onFormat, option)}
+              aria-pressed={format === option}
+              className={`border px-3 py-2 mono transition-colors ${
+                format === option
+                  ? 'border-neon bg-neon text-ink'
+                  : 'border-white/15 text-muted hover:border-neon/60 hover:text-bone'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        <div className="hidden h-6 w-px bg-white/15 lg:block" />
+
+        <div className="flex gap-1.5">
+          {statuses.map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => change(onStatus, option)}
+              aria-pressed={status === option}
+              className={`border px-3 py-2 mono transition-colors ${
+                status === option
+                  ? 'border-bone/60 bg-bone/10 text-bone'
+                  : 'border-transparent text-muted hover:text-bone'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
+
+        <div className="ml-auto flex flex-1 items-center gap-3 sm:flex-none">
+          <label className="flex min-w-0 flex-1 items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 focus-within:border-neon sm:w-64">
+            <span className="mono text-neon" aria-hidden="true">⌕</span>
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => change(onQuery, event.target.value)}
+              placeholder="BUSCAR EN EL ARCHIVO…"
+              aria-label="Buscar títulos"
+              className="w-full bg-transparent mono text-bone placeholder:text-muted/70 focus:outline-none"
+            />
+          </label>
+
+          <button
+            type="button"
+            onClick={() => change(onFavoritesOnly, !favoritesOnly)}
+            aria-pressed={favoritesOnly}
+            aria-label="Mostrar solo favoritos"
+            className={`border px-3 py-2 text-lg leading-none transition-colors ${
+              favoritesOnly
+                ? 'border-neon bg-neon/15 text-neon'
+                : 'border-white/15 text-muted hover:text-neon'
+            }`}
+          >
+            ♥
+          </button>
+
+          <span className="mono whitespace-nowrap text-muted">
+            <b className="text-neon">{String(count).padStart(2, '0')}</b> / 93
+          </span>
+        </div>
+      </div>
+    </div>
+  )
+}

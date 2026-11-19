@@ -1,0 +1,19 @@
+# Dependencias y build
+node_modules/
+dist/
+
+# Evidencia / QA local
+qa/
+.playwright-mcp/
+
+# Configuración local de herramientas y datos personales (NO subir)
+opencode.json
+promptinicial.txt
+skills/
+skills-lock.json
+.agents/
+mcp/
+
+# Sistema
+*.local
+.DS_Store

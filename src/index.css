@@ -1,0 +1,197 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #08080a;
+  --color-ink-2: #0e0e12;
+  --color-ash: #17171d;
+  --color-bone: #f4eee7;
+  --color-muted: #8c8781;
+  --color-neon: #ff2b2b;
+  --color-neon-soft: #ff6050;
+  --color-blood: #9e1620;
+
+  --font-display: "Anton", "Impact", sans-serif;
+  --font-mono: "DM Mono", ui-monospace, monospace;
+  --font-sans: "Inter", system-ui, sans-serif;
+
+  --ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:root {
+  color-scheme: dark;
+  background: var(--color-ink);
+}
+
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  margin: 0;
+  background: var(--color-ink);
+  color: var(--color-bone);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--color-neon);
+  color: #fff;
+}
+
+button, input, textarea {
+  font: inherit;
+}
+
+button { cursor: pointer; }
+
+:focus-visible {
+  outline: 2px solid var(--color-neon);
+  outline-offset: 3px;
+}
+
+/* --- Textura: grano fílmico + barrido sutil --- */
+.film-grain::after {
+  content: "";
+  position: fixed;
+  inset: -60%;
+  z-index: 70;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation: grain-shift 0.6s steps(4) infinite;
+}
+
+@keyframes grain-shift {
+  0%   { transform: translate3d(0, 0, 0); }
+  25%  { transform: translate3d(-3%, 2%, 0); }
+  50%  { transform: translate3d(2%, -3%, 0); }
+  75%  { transform: translate3d(-2%, -2%, 0); }
+  100% { transform: translate3d(3%, 1%, 0); }
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+
+/* --- Tipografía editorial --- */
+.display {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 0.86;
+  letter-spacing: -0.015em;
+  text-transform: uppercase;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.hairline { border-color: rgba(244, 238, 231, 0.12); }
+
+/* --- Brillo neón contenido --- */
+.neon-glow { box-shadow: 0 0 0 1px rgba(255, 43, 43, 0.55), 0 0 30px -8px rgba(255, 43, 43, 0.7); }
+
+.text-glow { text-shadow: 0 0 24px rgba(255, 43, 43, 0.55); }
+
+/* --- Ticker --- */
+.ticker-mask {
+  mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+}
+
+/* --- Tarjetas --- */
+.poster-card {
+  position: relative;
+  isolation: isolate;
+  background: var(--color-ash);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.poster-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(180deg, rgba(8,8,10,0) 22%, rgba(8,8,10,0.5) 52%, rgba(8,8,10,0.96) 100%);
+  pointer-events: none;
+}
+
+.poster-card img {
+  transition: transform 0.7s var(--ease-cinema), filter 0.5s ease;
+}
+
+.poster-card:hover img {
+  transform: scale(1.07);
+  filter: saturate(1.15) brightness(1.08);
+}
+
+.poster-card[data-seen="true"] img { filter: grayscale(0.55) brightness(0.72); }
+
+/* --- Ticket de cine --- */
+.ticket {
+  position: relative;
+  background:
+    linear-gradient(135deg, rgba(255,43,43,0.08), transparent 35%),
+    var(--color-ink-2);
+  border: 1px solid rgba(255, 43, 43, 0.35);
+  box-shadow: 0 30px 90px -20px rgba(0,0,0,0.9), 0 0 60px -30px rgba(255,43,43,0.6);
+}
+
+.ticket::before,
+.ticket::after {
+  content: "";
+  position: absolute;
+  left: 34%;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-ink);
+  border: 1px solid rgba(255, 43, 43, 0.35);
+  z-index: 3;
+}
+.ticket::before { top: -13px; }
+.ticket::after { bottom: -13px; }
+
+.ticket-stub {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 6px, rgba(244,238,231,0.05) 6px 7px),
+    var(--color-blood);
+  border-left: 1px dashed rgba(244,238,231,0.35);
+}
+
+/* --- Stickers --- */
+.sticker {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,43,43,0.8);
+  background: var(--color-ink);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.8);
+  overflow: hidden;
+  touch-action: none;
+  user-select: none;
+  will-change: transform;
+}
+.sticker img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
+
+/* --- Scrollbar --- */
+::-webkit-scrollbar { width: 9px; height: 9px; }
+::-webkit-scrollbar-track { background: var(--color-ink); }
+::-webkit-scrollbar-thumb { background: #35353d; border-radius: 9px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-neon); }
+
+/* --- Accesibilidad: movimiento reducido --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .film-grain::after { animation: none; }
+}
