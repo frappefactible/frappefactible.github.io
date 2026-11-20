@@ -228,24 +228,24 @@ export function Hero({
             </p>
             <div className="flex flex-wrap gap-x-8 gap-y-3 mono text-muted">
               <span><b className="text-bone">{items.length}</b> TÍTULOS</span>
-              <span><b className="text-bone">8</b> COLECCIONES</span>
               <span><b className="text-bone">6</b> FORMATOS</span>
+              <span><b className="text-bone">1</b> RULETA</span>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-6 sm:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid items-stretch gap-6 sm:grid-cols-[1.1fr_0.9fr]">
           {/* Spotlight con tilt 3D */}
-          <div className="relative [perspective:900px]">
+          <div className="relative h-[520px] [perspective:900px] md:h-[560px]">
             <button
               type="button"
               onClick={() => spotlight && onOpen(spotlight)}
-              className="group block w-full text-left"
+              className="group block h-full w-full text-left"
               aria-label={`Abrir ficha de ${getDisplayTitle(spotlight)}`}
             >
               <div
                 ref={spotlightRef}
-                className="poster-card relative aspect-[2/3] w-full overflow-hidden border border-white/15 [transform-style:preserve-3d]"
+                className="poster-card relative h-full w-full overflow-hidden border border-white/15 [transform-style:preserve-3d]"
               >
                 <img
                   src={spotlight.imageUrl}
@@ -279,12 +279,11 @@ export function Hero({
           </div>
 
           {/* Ruleta */}
-          <div className="flex flex-col justify-between border border-white/15 bg-ink-2/70 p-5 backdrop-blur">
+          <div className="flex h-[520px] flex-col justify-between overflow-hidden border border-white/15 bg-ink-2/70 p-4 backdrop-blur md:h-[560px]">
             <div>
               <div className="mono text-neon">¿QUÉ VEO HOY?</div>
               <p className="mt-2 text-xs leading-relaxed text-muted">
-                Gira la ruleta. El archivo decide entre los pendientes que coinciden con tus filtros,
-                evitando los últimos ganadores.
+                Gira la ruleta: el archivo decide entre tus pendientes, sin repetir ganadores.
               </p>
               <p
                 className={`mono mt-2 h-4 text-neon/80 ${usingFallback ? '' : 'invisible'}`}
@@ -294,14 +293,14 @@ export function Hero({
               </p>
             </div>
 
-            <div className="my-5 space-y-1.5" aria-live="polite">
+            <div className="my-3 space-y-1.5" aria-live="polite">
               {Array.from({ length: 5 }).map((_, index) => {
                 const candidate = candidates[index]
                 if (!candidate) {
                   return (
                     <div
                       key={`empty-${index}`}
-                      className="reel-chip mono flex h-10 items-center border-l-2 border-white/5 px-2 text-muted/30"
+                      className="reel-chip mono flex h-9 items-center border-l-2 border-white/5 px-2 text-muted/30"
                       aria-hidden="true"
                     >
                       {String(index + 1).padStart(2, '0')} —
@@ -312,7 +311,7 @@ export function Hero({
                   <div
                     key={candidate.id}
                     data-id={candidate.id}
-                    className={`reel-chip mono flex h-10 items-start gap-2 border-l-2 px-2 py-1 transition-all duration-200 ${
+                    className={`reel-chip mono flex h-9 items-start gap-2 border-l-2 px-2 py-1 transition-all duration-200 ${
                       index === active
                         ? 'is-active border-neon bg-neon/10 text-bone'
                         : 'border-white/10 text-muted/70'
@@ -330,11 +329,11 @@ export function Hero({
 
             {/* Espacio reservado: el panel no cambia de altura al salir el ganador. */}
             <div
-              className={`mb-4 h-[112px] border border-neon/50 bg-neon/5 p-3 ${winner ? '' : 'invisible'}`}
+              className={`mb-3 h-[92px] border border-neon/50 bg-neon/5 p-2.5 ${winner ? '' : 'invisible'}`}
               aria-live="polite"
             >
               <div className="mono text-neon">LA SUERTE HA HABLADO</div>
-              <div className="display mt-1 line-clamp-2 text-xl leading-tight text-bone">
+              <div className="display mt-1 line-clamp-2 text-lg leading-tight text-bone">
                 {winner ? getDisplayTitle(winner) : ''}
               </div>
               {winner && (
@@ -352,7 +351,7 @@ export function Hero({
               type="button"
               onClick={spin}
               disabled={spinning || roulettePool.length === 0}
-              className="neon-glow w-full bg-neon px-4 py-4 font-display text-2xl tracking-wide text-ink transition-transform duration-200 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
+              className="neon-glow w-full bg-neon px-4 py-3 font-display text-xl tracking-wide text-ink transition-transform duration-200 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
             >
               {spinning ? 'GIRANDO…' : 'GIRAR LA RULETA'}
             </button>
