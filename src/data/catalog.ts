@@ -1,7 +1,8 @@
 /**
  * Catálogo completo de FACTIBLE — migrado 100% desde `script.js`.
- * Los tipos se conservan tal cual estaban en el original. Las antiguas "fases"
- * se sustituyen por colecciones temáticas que cruzan películas, series y animes.
+ * Los tipos se conservan tal cual estaban en el original. El campo `collection`
+ * se usa internamente solo como token de color de acento; no se muestra como
+ * clasificación al usuario.
  */
 
 export type MediaType =

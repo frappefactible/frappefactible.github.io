@@ -32,7 +32,7 @@ export function MediaCard({ item, favorite, visible, onOpen, onToggleFavorite }:
             className="flex h-full w-full flex-col items-center justify-center gap-3 p-4 text-center"
             style={{ background: `linear-gradient(150deg, ${collection.color}33, #08080a 70%)` }}
           >
-            <span className="text-4xl" style={{ color: collection.color }}>{collection.glyph}</span>
+            <span className="text-4xl" style={{ color: collection.color }}>✳</span>
             <span className="display text-lg leading-tight text-bone">{getDisplayTitle(item)}</span>
           </div>
         ) : (
@@ -49,9 +49,6 @@ export function MediaCard({ item, favorite, visible, onOpen, onToggleFavorite }:
         )}
 
         <div className="absolute inset-x-0 bottom-0 z-10 p-3">
-          <div className="mono mb-1 truncate" style={{ color: collection.color }}>
-            {collection.glyph} {collection.name}
-          </div>
           <h3 className="display text-lg leading-none text-bone md:text-2xl">
             {getDisplayTitle(item)}
           </h3>

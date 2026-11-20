@@ -2,8 +2,17 @@ import { useMemo, useRef } from 'react'
 import { animate } from 'animejs'
 import { gsap, ScrollTrigger, useGSAP } from '../lib/gsap'
 import { useAnimeScope } from '../hooks/useAnimeScope'
-import { collections } from '../data/catalog'
 import type { MediaItem } from '../data/catalog'
+
+const FORMAT_GROUPS = [
+  { label: 'PELÍCULAS', color: '#FF3B30', match: (type: string) => type === 'Película' },
+  {
+    label: 'ANIMES Y AFINES',
+    color: '#FF2D78',
+    match: (type: string) => ['Anime', 'Película Anime', 'OVA', 'Manga'].includes(type),
+  },
+  { label: 'SERIES', color: '#FF8A5B', match: (type: string) => type === 'Serie' },
+]
 
 interface Props {
   items: MediaItem[]
@@ -40,8 +49,8 @@ export function StatsSection({ items, favorites, reduced }: Props) {
   )
 
   const metricsKey = metrics.map((metric) => metric.value).join(',')
-  const maxCollection = Math.max(
-    ...collections.map((collection) => items.filter((item) => item.collection === collection.id).length),
+  const maxFormat = Math.max(
+    ...FORMAT_GROUPS.map((group) => items.filter((item) => group.match(item.type)).length),
     1,
   )
 
@@ -137,19 +146,19 @@ export function StatsSection({ items, favorites, reduced }: Props) {
         </div>
 
         <div className="mt-16">
-          <div className="mono mb-6 text-muted">DISTRIBUCIÓN POR OBSESIÓN</div>
+          <div className="mono mb-6 text-muted">DISTRIBUCIÓN POR FORMATO</div>
           <div className="space-y-3">
-            {collections.map((collection) => {
-              const count = items.filter((item) => item.collection === collection.id).length
+            {FORMAT_GROUPS.map((group) => {
+              const count = items.filter((item) => group.match(item.type)).length
               return (
-                <div key={collection.id} className="grid grid-cols-[1fr_2fr_auto] items-center gap-4">
-                  <span className="truncate text-xs text-bone md:text-sm">{collection.name}</span>
+                <div key={group.label} className="grid grid-cols-[1fr_2fr_auto] items-center gap-4">
+                  <span className="truncate text-xs text-bone md:text-sm">{group.label}</span>
                   <div className="h-2 w-full bg-white/5">
                     <div
                       data-bar
-                      data-ratio={(count / maxCollection).toFixed(3)}
+                      data-ratio={(count / maxFormat).toFixed(3)}
                       className="h-full origin-left"
-                      style={{ backgroundColor: collection.color, transform: 'scaleX(0)' }}
+                      style={{ backgroundColor: group.color, transform: 'scaleX(0)' }}
                     />
                   </div>
                   <span className="mono w-8 text-right text-muted">{String(count).padStart(2, '0')}</span>

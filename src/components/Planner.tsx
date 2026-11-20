@@ -188,7 +188,7 @@ export function Planner({
       ctx.fillStyle = '#8c8781'
       ctx.font = `500 ${Math.round(12 * f)}px "DM Mono", monospace`
       ctx.fillText(
-        `${item.type.toUpperCase()}  /  ${getYear(item)}  /  ${collection.name.toUpperCase()}`,
+        `${item.type.toUpperCase()}  /  ${getYear(item)}`,
         left,
         y + 76 * f + 6,
       )
@@ -397,7 +397,7 @@ export function Planner({
                           {getDisplayTitle(item)}
                         </button>
                         <span className="mono mt-1 block truncate text-muted">
-                          {collection.glyph} {collection.name} · {item.type}
+                          {item.type} · {getYear(item)}
                         </span>
                         <input
                           value={entry.note}

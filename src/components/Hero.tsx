@@ -3,8 +3,8 @@ import type { RefObject } from 'react'
 import { animate, spring, stagger } from 'animejs'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useAnimeScope } from '../hooks/useAnimeScope'
-import { collectionById, getDisplayTitle, getOriginalTitle, getYear } from '../data/catalog'
-import type { CollectionId, MediaItem } from '../data/catalog'
+import { getDisplayTitle, getOriginalTitle, getYear } from '../data/catalog'
+import type { MediaItem } from '../data/catalog'
 import type { FormatFilter, StatusFilter } from './FilterDock'
 
 interface Props {
@@ -12,7 +12,6 @@ interface Props {
   format: FormatFilter
   status: StatusFilter
   query: string
-  collection: CollectionId | null
   favoritesOnly: boolean
   favorites: number[]
   history: number[]
@@ -42,7 +41,6 @@ export function Hero({
   format,
   status,
   query,
-  collection,
   favoritesOnly,
   favorites,
   history,
@@ -66,12 +64,11 @@ export function Hero({
       if (format === 'Series' && item.type !== 'Serie') return false
       if (format === 'Animes' && !['Anime', 'Película Anime', 'OVA', 'Manga'].includes(item.type)) return false
       if (status !== 'Todos' && item.status !== status) return false
-      if (collection && item.collection !== collection) return false
       if (favoritesOnly && !favorites.includes(item.id)) return false
       if (term && !normalize(item.title).includes(term)) return false
       return true
     })
-  }, [pending, format, status, query, collection, favoritesOnly, favorites])
+  }, [pending, format, status, query, favoritesOnly, favorites])
 
   const recent = history.slice(-5)
   const fresh = contextual.filter((item) => !recent.includes(item.id))
@@ -81,7 +78,6 @@ export function Hero({
   const [spotlight, setSpotlight] = useState<MediaItem>(() =>
     pickRandom(pending.length ? pending : items),
   )
-  const spotlightCollection = collectionById[spotlight.collection]
 
   const [candidates, setCandidates] = useState<MediaItem[]>(() => shuffle(pending).slice(0, 5))
   const [active, setActive] = useState(0)
@@ -216,19 +212,19 @@ export function Hero({
         <div>
           <div className="mb-6 flex items-center gap-3 mono text-neon">
             <span className="inline-block h-1.5 w-1.5 bg-neon" />
-            ARCHIVO PERSONAL / FUNCIONES DE NOCHE
+            DESCUBRE NUEVOS TITULOS
           </div>
 
           <h1 className="display text-[clamp(4.2rem,12.5vw,11rem)] text-bone">
-            CARTELERA
+            CREA TU
             <br />
-            NOCTURNA<span className="text-neon text-glow">.</span>
+            CARTELERA<span className="text-neon text-glow">.</span>
           </h1>
 
           <div className="mt-8 flex max-w-xl flex-col gap-5 border-l border-neon/60 pl-6">
             <p className="text-sm leading-relaxed text-muted md:text-base">
               Mi lista de películas, series y animes por ver. Sin algoritmos que decidan por mí:
-              solo obsesiones, ordenadas por tema y una ruleta para los días de indecisión.
+              una ruleta para los días de indecisión y un plan para no perderte nada.
             </p>
             <div className="flex flex-wrap gap-x-8 gap-y-3 mono text-muted">
               <span><b className="text-bone">{items.length}</b> TÍTULOS</span>
@@ -258,9 +254,6 @@ export function Hero({
                   loading="eager"
                 />
                 <div className="absolute inset-x-0 bottom-0 z-10 p-4">
-                  <div className="mono mb-1" style={{ color: spotlightCollection.color }}>
-                    {spotlightCollection.glyph} {spotlightCollection.name}
-                  </div>
                   <div className="display text-2xl leading-none text-bone sm:text-3xl">
                     {getDisplayTitle(spotlight)}
                   </div>

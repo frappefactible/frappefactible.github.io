@@ -17,7 +17,6 @@ export function SiteHeader({ total, favorites, seen }: Props) {
 
         <nav className="hidden items-center gap-8 md:flex" aria-label="Navegación principal">
           <a href="#cartelera" className="mono text-muted transition-colors hover:text-neon">Cartelera</a>
-          <a href="#colecciones" className="mono text-muted transition-colors hover:text-neon">Colecciones</a>
           <a href="#plan" className="mono text-muted transition-colors hover:text-neon">Mi plan</a>
           <a href="#stats" className="mono text-muted transition-colors hover:text-neon">Stats</a>
         </nav>

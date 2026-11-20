@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { animate, spring } from 'animejs'
 import { gsap, SplitText, useGSAP } from '../lib/gsap'
 import { useAnimeScope } from '../hooks/useAnimeScope'
-import { collections, catalog } from '../data/catalog'
+import { catalog } from '../data/catalog'
 
 interface Props {
   onDone: () => void
@@ -102,14 +102,14 @@ export function Preloader({ onDone, reduced }: Props) {
         FACTIBLE
       </h1>
 
-      <div className="mt-4 mono text-neon">CARTELERA NOCTURNA — PREPARANDO FUNCIONES</div>
+      <div className="mt-4 mono text-neon">CREA TU CARTELERA — PREPARANDO FUNCIONES</div>
 
       <div className="mt-10 h-px w-[min(70vw,420px)] bg-white/15">
         <div ref={bar} className="h-px w-full origin-left bg-neon" />
       </div>
 
       <div className="absolute bottom-6 mono text-muted">
-        {catalog.length} TÍTULOS · {collections.length} OBSESIONES
+        {catalog.length} TÍTULOS · 6 FORMATOS
       </div>
     </div>
   )

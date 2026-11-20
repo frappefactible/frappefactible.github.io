@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { animate, spring } from 'animejs'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useAnimeScope } from '../hooks/useAnimeScope'
-import { collectionById, getOriginalTitle, getYear, tmdbPaths } from '../data/catalog'
+import { getOriginalTitle, getYear, tmdbPaths } from '../data/catalog'
 import type { MediaItem, MediaStatus } from '../data/catalog'
 
 interface Props {
@@ -44,7 +44,6 @@ export function TicketModal({
 }: Props) {
   const root = useRef<HTMLDivElement>(null)
   const runAnime = useAnimeScope(root)
-  const collection = collectionById[item.collection]
   const tmdbUrl = tmdbPaths[item.id]
     ? `https://www.themoviedb.org${tmdbPaths[item.id]}`
     : `https://www.themoviedb.org/search?query=${encodeURIComponent(getOriginalTitle(item) || item.title)}`
@@ -159,8 +158,8 @@ export function TicketModal({
             {[
               ['FORMATO', item.type],
               ['AÑO', getYear(item)],
-              ['COLECCIÓN', collection.name],
               ['ESTADO', item.status],
+              ['NOTA', rating ? `${rating}/5 ★` : '—'],
             ].map(([label, value]) => (
               <div key={label} className="bg-ink-2 p-3">
                 <dt className="mono text-muted">{label}</dt>
@@ -274,10 +273,10 @@ export function TicketModal({
         {/* Talón */}
         <div className="ticket-stub relative flex min-h-[120px] flex-col items-center justify-between gap-4 p-4 md:min-h-0">
           <div className="ticket-seal grid h-14 w-14 place-items-center rounded-full border-2 border-bone/70 text-2xl text-bone">
-            {collection.glyph}
+            ✳
           </div>
           <div className="mono hidden text-center leading-loose text-bone/80 [writing-mode:vertical-rl] md:block">
-            FACTIBLE · CARTELERA NOCTURNA · {String(item.id).padStart(3, '0')}
+            FACTIBLE · CREA TU CARTELERA · {String(item.id).padStart(3, '0')}
           </div>
           <div className="h-10 w-full bg-[repeating-linear-gradient(90deg,#f4eee7_0_2px,transparent_2px_5px)] opacity-70" />
         </div>

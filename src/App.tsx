@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flip } from './lib/gsap'
-import { catalog, collections, getDisplayTitle, getYear } from './data/catalog'
-import type { CollectionId, ItemOverride, MediaItem, MediaStatus, PlannerEntry, SortMode } from './data/catalog'
+import { catalog, getDisplayTitle, getYear } from './data/catalog'
+import type { ItemOverride, MediaItem, MediaStatus, PlannerEntry, SortMode } from './data/catalog'
 import { usePersistentState } from './hooks/usePersistentState'
 import { useReducedMotion } from './hooks/useReducedMotion'
 import { useLenis } from './hooks/useLenis'
 import { Preloader } from './components/Preloader'
 import { SiteHeader } from './components/SiteHeader'
 import { Hero } from './components/Hero'
-import { CollectionStrip } from './components/CollectionStrip'
 import { FilterDock } from './components/FilterDock'
 import type { FormatFilter, StatusFilter, ViewMode } from './components/FilterDock'
 import { MediaGrid } from './components/MediaGrid'
@@ -22,10 +21,6 @@ import type { BackupData } from './components/DataBackup'
 
 type Overrides = Record<number, ItemOverride>
 type LocalData = Omit<BackupData, 'version' | 'exportedAt'>
-interface InstallPromptEvent extends Event {
-  prompt: () => Promise<void>
-}
-
 const URL_FORMATS: FormatFilter[] = ['Todos', 'Películas', 'Series', 'Animes']
 const URL_STATUSES: StatusFilter[] = ['Todos', 'Por ver', 'Visto']
 const URL_SORTS: SortMode[] = ['archivo', 'anio', 'titulo', 'estado', 'favoritos']
@@ -36,7 +31,6 @@ const readUrl = () => {
     tipo?: FormatFilter
     estado?: StatusFilter
     buscar?: string
-    coleccion?: CollectionId
     favoritos?: boolean
     orden?: SortMode
     vista?: ViewMode
@@ -52,10 +46,6 @@ const readUrl = () => {
   if (estadoMatch) result.estado = estadoMatch
   const buscar = params.get('buscar')
   if (buscar) result.buscar = buscar
-  const coleccion = params.get('coleccion')
-  if (coleccion && collections.some((item) => item.id === coleccion)) {
-    result.coleccion = coleccion as CollectionId
-  }
   if (params.get('favoritos') === '1') result.favoritos = true
   const orden = params.get('orden')
   if (orden && URL_SORTS.includes(orden as SortMode)) result.orden = orden as SortMode
@@ -116,11 +106,9 @@ export default function App() {
   const [status, setStatus] = useState<StatusFilter>(initialUrl.estado ?? 'Todos')
   const [query, setQuery] = useState(initialUrl.buscar ?? '')
   const [favoritesOnly, setFavoritesOnly] = useState(initialUrl.favoritos ?? false)
-  const [collection, setCollection] = useState<CollectionId | null>(initialUrl.coleccion ?? null)
   const [selectedId, setSelectedId] = useState<number | null>(initialUrl.ficha ?? null)
   const [view, setView] = useState<ViewMode>(initialUrl.vista ?? 'grid')
   const [showTop, setShowTop] = useState(false)
-  const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
 
   const [favorites, setFavorites] = usePersistentState<number[]>('factible:favorites:v1', [])
   const [planner, setPlanner] = usePersistentState<PlannerEntry[]>(
@@ -161,24 +149,17 @@ export default function App() {
       if (format === 'Series' && item.type !== 'Serie') return false
       if (format === 'Animes' && !ANIME_TYPES.includes(item.type)) return false
       if (status !== 'Todos' && item.status !== status) return false
-      if (collection && item.collection !== collection) return false
       if (favoritesOnly && !favorites.includes(item.id)) return false
       if (term && !normalize(item.title).includes(term)) return false
       return true
     })
     return filtered
-  }, [sortedCatalog, format, status, collection, favoritesOnly, favorites, query])
+  }, [sortedCatalog, format, status, favoritesOnly, favorites, query])
 
   const visibleIds = useMemo(
     () => new Set(visibleItems.map((item) => item.id)),
     [visibleItems],
   )
-
-  const collectionCounts = useMemo(() => {
-    const counts = {} as Record<CollectionId, number>
-    for (const item of items) counts[item.collection] = (counts[item.collection] ?? 0) + 1
-    return counts
-  }, [items])
 
   const selected = selectedId === null ? null : items.find((item) => item.id === selectedId) ?? null
   const selectedIndex = selectedId === null ? -1 : visibleItems.findIndex((item) => item.id === selectedId)
@@ -216,7 +197,6 @@ export default function App() {
     if (format !== 'Todos') params.set('tipo', format)
     if (status !== 'Todos') params.set('estado', status)
     if (query.trim()) params.set('buscar', query.trim())
-    if (collection) params.set('coleccion', collection)
     if (favoritesOnly) params.set('favoritos', '1')
     if (sort !== 'archivo') params.set('orden', sort)
     if (view !== 'grid') params.set('vista', view)
@@ -227,7 +207,7 @@ export default function App() {
       '',
       `${window.location.pathname}${search ? `?${search}` : ''}${hash}`,
     )
-  }, [format, status, query, collection, favoritesOnly, sort, view, selectedId])
+  }, [format, status, query, favoritesOnly, sort, view, selectedId])
 
   useEffect(() => {
     const onPop = () => {
@@ -236,7 +216,6 @@ export default function App() {
       setStatus(url.estado ?? 'Todos')
       setQuery(url.buscar ?? '')
       setFavoritesOnly(url.favoritos ?? false)
-      setCollection(url.coleccion ?? null)
       setSelectedId(url.ficha ?? null)
       if (url.orden) setSort(url.orden)
       if (url.vista) setView(url.vista)
@@ -244,21 +223,6 @@ export default function App() {
     window.addEventListener('popstate', onPop)
     return () => window.removeEventListener('popstate', onPop)
   }, [setSort])
-
-  useEffect(() => {
-    const onPrompt = (event: Event) => {
-      event.preventDefault()
-      setInstallEvent(event as InstallPromptEvent)
-    }
-    window.addEventListener('beforeinstallprompt', onPrompt)
-    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
-  }, [])
-
-  const installApp = async () => {
-    if (!installEvent) return
-    await installEvent.prompt()
-    setInstallEvent(null)
-  }
 
   const toggleFavorite = useCallback(
     (id: number) => {
@@ -358,7 +322,6 @@ export default function App() {
     setStatus('Todos')
     setQuery('')
     setFavoritesOnly(false)
-    setCollection(null)
   }
 
   const backupData: LocalData = { favorites, planner, overrides, sort, history }
@@ -382,7 +345,7 @@ export default function App() {
   }
 
   const hasFilters =
-    format !== 'Todos' || status !== 'Todos' || query !== '' || favoritesOnly || collection !== null
+    format !== 'Todos' || status !== 'Todos' || query !== '' || favoritesOnly
 
   return (
     <div className="min-h-screen bg-ink text-bone">
@@ -396,7 +359,6 @@ export default function App() {
           format={format}
           status={status}
           query={query}
-          collection={collection}
           favoritesOnly={favoritesOnly}
           favorites={favorites}
           history={history}
@@ -404,13 +366,6 @@ export default function App() {
           spinRef={spinRef}
           onOpen={(item) => setSelectedId(item.id)}
           reduced={reduced}
-        />
-
-        <CollectionStrip
-          active={collection}
-          counts={collectionCounts}
-          onSelect={setCollection}
-          onBeforeChange={captureFlip}
         />
 
         <section id="cartelera" className="px-5 pb-20 pt-16 md:px-10 md:pb-28">
@@ -497,19 +452,10 @@ export default function App() {
         <footer className="border-t border-white/10 px-5 py-10 md:px-10">
           <div className="mx-auto max-w-[1600px]">
             <div className="flex flex-wrap items-center justify-between gap-4 mono text-muted">
-              <span>FACTIBLE · CARTELERA NOCTURNA</span>
-              <span>HECHO SIN BASE DE DATOS · SOLO ARCHIVOS Y UN POCO DE OBSESIÓN</span>
+              <span>FACTIBLE · CREA TU CARTELERA</span>
+              <span>HECHO SIN BASE DE DATOS · SOLO ARCHIVOS Y UN POCO DE CINE</span>
               <a href="#top" className="text-neon hover:underline">VOLVER ARRIBA ↑</a>
             </div>
-            {installEvent && (
-              <button
-                type="button"
-                onClick={installApp}
-                className="w-fit border border-neon px-4 py-2 mono text-neon transition-colors hover:bg-neon hover:text-ink"
-              >
-                ↓ INSTALAR APP
-              </button>
-            )}
             <DataBackup data={backupData} onImport={importBackup} onReset={resetAll} />
           </div>
         </footer>
