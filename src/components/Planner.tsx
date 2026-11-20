@@ -93,7 +93,7 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
       ctx.fillText('FACTIBLE', 124, 84)
       ctx.fillStyle = '#8c8781'
       ctx.font = '500 13px "DM Mono", monospace'
-      ctx.fillText('CARTELERA NOCTURNA / PLAN PERSONAL', 124, 105)
+      ctx.fillText('MI CARTELERA PERSONAL FAVORITA <3', 124, 105)
 
       ctx.fillStyle = '#f4eee7'
       ctx.font = '400 80px Anton, Impact, sans-serif'
@@ -165,9 +165,9 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
       const footerY = 380 + chosen.length * rowHeight + 42
       ctx.fillStyle = '#8c8781'
       ctx.font = '500 13px "DM Mono", monospace'
-      ctx.fillText(`${chosen.length} TÍTULOS  ·  GUARDADO EN TU NAVEGADOR`, 48, footerY)
+      ctx.fillText(`${chosen.length} TÍTULOS`, 48, footerY)
       ctx.fillStyle = '#ff2b2b'
-      ctx.fillText('factible.github.io', width - 232, footerY)
+      ctx.fillText('frappefactible.github.io', width - 264, footerY)
 
       const link = document.createElement('a')
       link.download = `factible-plan-${new Date().toISOString().slice(0, 10)}.png`

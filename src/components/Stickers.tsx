@@ -6,9 +6,10 @@ interface Props {
 }
 
 const REACTIONS = [
-  { src: '/GIFs/Hello_in_languages.gif', label: '¿QUÉ CARAJOS?' },
-  { src: '/GIFs/212747903-e9bdf048-2dc8-41f9-b973-0e72ff07bfba.gif', label: 'ME ENCANTA' },
-  { src: '/GIFs/225813708-98b745f2-7d22-48cf-9150-083f1b00d6c9.gif', label: 'NO PUEDO MÁS' },
+  { src: '/GIFs/filter.gif', label: 'CON FILTRO' },
+  { src: '/GIFs/magpie.gif', label: 'URRACA' },
+  { src: '/GIFs/sRun.gif', label: 'A TODA VELOCIDAD' },
+  { src: '/GIFs/HTKyPkKXUAEIUoX.webp', label: 'REACCIÓN' },
 ]
 
 export function Stickers({ reduced }: Props) {
@@ -18,11 +19,18 @@ export function Stickers({ reduced }: Props) {
     if (reduced || !root.current) return
 
     const scope = createScope({ root: root.current })
+    const bounds = root.current.querySelector<HTMLElement>('.sticker-bounds')
     scope.add(() => {
       const stickers = Array.from(root.current?.querySelectorAll<HTMLElement>('.sticker') ?? [])
+      const padding = 8
+
       stickers.forEach((sticker) => {
+        // El contenedor es la ventana: la reacción rebota en los bordes de la pantalla.
         createDraggable(sticker, {
-          containerPadding: 8,
+          container: bounds ?? undefined,
+          containerPadding: padding,
+          containerFriction: 0.9,
+          releaseContainerFriction: 0.9,
           releaseStiffness: 32,
           releaseEase: 'out(3)',
           onGrab: () => animate(sticker, { scale: 1.16, ease: spring({ bounce: 0.5, duration: 320 }) }),
@@ -42,6 +50,7 @@ export function Stickers({ reduced }: Props) {
       className="fixed bottom-5 right-5 z-50 hidden flex-col items-end gap-2 sm:flex"
       aria-label="Reacciones arrastrables"
     >
+      <div className="sticker-bounds pointer-events-none fixed inset-0" aria-hidden="true" />
       <span className="mono border border-neon/30 bg-ink px-2 py-1 text-neon/80">ARRASTRA LAS REACCIONES ↘</span>
       <div className="flex items-center gap-2">
         {REACTIONS.map((reaction) => (
