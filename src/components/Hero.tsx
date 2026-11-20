@@ -20,6 +20,9 @@ const shuffle = <T,>(array: T[]): T[] => {
   return copy
 }
 
+const pickRandom = (pool: MediaItem[]): MediaItem =>
+  pool[Math.floor(Math.random() * pool.length)]
+
 export function Hero({ items, onOpen, reduced }: Props) {
   const root = useRef<HTMLElement>(null)
   const spotlightRef = useRef<HTMLDivElement>(null)
@@ -27,7 +30,10 @@ export function Hero({ items, onOpen, reduced }: Props) {
   const timers = useRef<number[]>([])
 
   const pending = useMemo(() => items.filter((item) => item.status === 'Por ver'), [items])
-  const spotlight = items.find((item) => item.id === 92) ?? items[0]
+  // Sugerencia aleatoria en cada carga de página (prioriza títulos pendientes).
+  const [spotlight, setSpotlight] = useState<MediaItem>(() =>
+    pickRandom(pending.length ? pending : items),
+  )
   const spotlightCollection = collectionById[spotlight.collection]
 
   const [candidates, setCandidates] = useState<MediaItem[]>(() => shuffle(pending).slice(0, 5))
@@ -126,6 +132,22 @@ export function Hero({ items, onOpen, reduced }: Props) {
     timers.current.push(interval, end)
   }
 
+  const reroll = () => {
+    const others = items.filter((item) => item.id !== spotlight.id && item.status === 'Por ver')
+    const pool = others.length ? others : items.filter((item) => item.id !== spotlight.id)
+    setSpotlight(pickRandom(pool))
+    if (!reduced) {
+      runAnime(() => {
+        if (spotlightRef.current) {
+          animate(spotlightRef.current, {
+            scale: [0.92, 1],
+            ease: spring({ bounce: 0.5, duration: 600 }),
+          })
+        }
+      })
+    }
+  }
+
   return (
     <section ref={root} id="top" className="film-grain relative overflow-hidden px-5 pb-16 pt-24 md:px-10 md:pb-24 md:pt-32">
       {/* Halo de proyector */}
@@ -151,7 +173,7 @@ export function Hero({ items, onOpen, reduced }: Props) {
               solo obsesiones, ordenadas por tema y una ruleta para los días de indecisión.
             </p>
             <div className="flex flex-wrap gap-x-8 gap-y-3 mono text-muted">
-              <span><b className="text-bone">93</b> TÍTULOS</span>
+              <span><b className="text-bone">{items.length}</b> TÍTULOS</span>
               <span><b className="text-bone">8</b> COLECCIONES</span>
               <span><b className="text-bone">6</b> FORMATOS</span>
             </div>
@@ -189,9 +211,19 @@ export function Hero({ items, onOpen, reduced }: Props) {
                   </div>
                 </div>
                 <div className="absolute left-3 top-3 z-10 border border-neon bg-ink/80 px-2 py-1 mono text-neon">
-                  EN CARTELERA
+                  SUGERENCIA DEL DÍA
                 </div>
               </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={reroll}
+              aria-label="Ver otra sugerencia"
+              title="Otra sugerencia"
+              className="absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center border border-neon bg-ink/90 text-lg text-neon transition-colors hover:bg-neon hover:text-ink"
+            >
+              ↻
             </button>
           </div>
 

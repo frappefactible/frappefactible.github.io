@@ -162,6 +162,10 @@ const rows: CatalogRow[] = [
   [91, "[Devil May Cry] Devil May Cry (2025)", "Anime", "demonios", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/mX9tqfpjqwreONJHhap7SnSSowe.jpg", "Dante, café y un contrato eterno. Estilo demoníaco con actitud."], // Por ver
   [92, "[チェンソーマン レゼ篇] Chainsaw Man - The Movie: Reze Arc (2025)", "Película Anime", "demonios", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/3gq3Nc6wkgXrjPTkebAwOwe8l7x.jpg", "Motorsierra, reze y un beso con explosión. El anime del año en pantalla grande."], // Por ver
   [93, "[ダンダダン] Dandadan (2024)", "Anime", "demonios", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/bOPmmOXj33bxVW5DoWabkCLn6vE.jpg", "Aliens, fantasmas y adolescentes con problemas. Energía desbordada."], // Por ver
+  [94, "[チェーンスモーカーキャット] Chainsmoker Cat (2026)", "Anime", "demonios", "https://i.ytimg.com/vi/KYGgyQtSAdI/maxresdefault.jpg", "Un gato, humo y un humor tan negro como su pelaje. Rareza de Netflix con garras."], // Por ver
+  [95, "[STEEL BALL RUN] JoJo's Bizarre Adventure: Steel Ball Run (2026)", "Anime", "accion", "https://m.media-amazon.com/images/M/MV5BY2ExOTQ5YWItOGJkZi00Y2Y0LWFmNGItMzA1MWU4NzFkZmZhXkEyXkFqcGc@._V1_QL75_UX387_.jpg", "Caballos, stands y una carrera cruzando América. JoJo cambia de marcha."], // Por ver
+  [96, "[サイバーパンク エッジランナーズ2] Cyberpunk: Edgerunners 2 (2026)", "Anime", "cyberpunk", "https://www.cyberpunk.net/build/images/edgerunners2/redline-interference/poster-cd6b5ae3.jpg", "Night City vuelve a morder. Nueva historia, mismo neón letal."], // Por ver
+  [97, "[SCP:GALLIONIC] SCP: Gallionic (2026)", "Anime", "demonios", "https://i.ytimg.com/vi/RSbPdf3CGD8/maxresdefault.jpg", "Cortometraje indie: una brecha, dos hermanos y algo que no debería existir."], // Por ver
 ]
 
 const SEEN_IDS = new Set<number>([9, 12, 55, 70, 84])

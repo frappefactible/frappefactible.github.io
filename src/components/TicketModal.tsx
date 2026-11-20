@@ -8,7 +8,10 @@ import type { MediaItem, MediaStatus } from '../data/catalog'
 interface Props {
   item: MediaItem
   favorite: boolean
+  inPlanner: boolean
+  total: number
   reduced: boolean
+  onTogglePlanner: (id: number) => void
   onClose: () => void
   onToggleFavorite: (id: number) => void
   onNoteChange: (id: number, note: string) => void
@@ -18,7 +21,10 @@ interface Props {
 export function TicketModal({
   item,
   favorite,
+  inPlanner,
+  total,
   reduced,
+  onTogglePlanner,
   onClose,
   onToggleFavorite,
   onNoteChange,
@@ -87,7 +93,7 @@ export function TicketModal({
           />
           <div className="absolute inset-0 bg-gradient-to-t from-ink via-transparent to-transparent md:bg-gradient-to-r" />
           <div className="absolute bottom-3 left-3 mono text-white/70">
-            Nº {String(item.id).padStart(3, '0')} / 093
+            Nº {String(item.id).padStart(3, '0')} / {total}
           </div>
         </div>
 
@@ -144,6 +150,18 @@ export function TicketModal({
               }`}
             >
               {favorite ? '♥ EN FAVORITOS' : '♡ AÑADIR A FAVORITOS'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onTogglePlanner(item.id)}
+              aria-pressed={inPlanner}
+              className={`border px-4 py-3 mono transition-colors ${
+                inPlanner
+                  ? 'border-bone bg-bone/10 text-bone'
+                  : 'border-white/25 text-muted hover:border-bone hover:text-bone'
+              }`}
+            >
+              {inPlanner ? '✓ EN MI PLAN' : '＋ AÑADIR A MI PLAN'}
             </button>
           </div>
         </div>

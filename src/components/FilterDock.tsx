@@ -11,6 +11,7 @@ interface Props {
   favoritesOnly: boolean
   onFavoritesOnly: (value: boolean) => void
   count: number
+  total: number
   onBeforeChange: () => void
 }
 
@@ -27,6 +28,7 @@ export function FilterDock({
   favoritesOnly,
   onFavoritesOnly,
   count,
+  total,
   onBeforeChange,
 }: Props) {
   const change = <T,>(setter: (value: T) => void, value: T) => {
@@ -103,7 +105,7 @@ export function FilterDock({
           </button>
 
           <span className="mono whitespace-nowrap text-muted">
-            <b className="text-neon">{String(count).padStart(2, '0')}</b> / 93
+            <b className="text-neon">{String(count).padStart(2, '0')}</b> / {total}
           </span>
         </div>
       </div>

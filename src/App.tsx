@@ -14,6 +14,7 @@ import type { FormatFilter, StatusFilter } from './components/FilterDock'
 import { MediaGrid } from './components/MediaGrid'
 import { TicketModal } from './components/TicketModal'
 import { StatsSection } from './components/StatsSection'
+import { Planner } from './components/Planner'
 import { Stickers } from './components/Stickers'
 
 type Overrides = Record<number, Partial<Pick<MediaItem, 'status' | 'note'>>>
@@ -35,6 +36,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
   const [favorites, setFavorites] = usePersistentState<number[]>('factible:favorites:v1', [])
+  const [planner, setPlanner] = usePersistentState<number[]>('factible:planner:v1', [])
   const [overrides, setOverrides] = usePersistentState<Overrides>('factible:overrides:v1', {})
 
   const flipState = useRef<ReturnType<typeof Flip.getState> | null>(null)
@@ -102,6 +104,29 @@ export default function App() {
     [setOverrides],
   )
 
+  const addToPlanner = useCallback(
+    (id: number) => {
+      setPlanner((previous) => (previous.includes(id) ? previous : [...previous, id]))
+    },
+    [setPlanner],
+  )
+
+  const removeFromPlanner = useCallback(
+    (id: number) => {
+      setPlanner((previous) => previous.filter((value) => value !== id))
+    },
+    [setPlanner],
+  )
+
+  const togglePlanner = useCallback(
+    (id: number) => {
+      setPlanner((previous) =>
+        previous.includes(id) ? previous.filter((value) => value !== id) : [...previous, id],
+      )
+    },
+    [setPlanner],
+  )
+
   const resetFilters = () => {
     captureFlip()
     setFormat('Todos')
@@ -137,7 +162,9 @@ export default function App() {
                 <div className="mono text-neon">LA FILA DE ESPERA</div>
                 <h2 className="display mt-2 text-5xl md:text-7xl">TODOS LOS TÍTULOS</h2>
               </div>
-              <p className="mono text-muted">ORDEN: ARCHIVO / 001 — 093</p>
+              <p className="mono text-muted">
+                ORDEN: ARCHIVO / 001 — {String(items.length).padStart(3, '0')}
+              </p>
             </div>
 
             <FilterDock
@@ -150,6 +177,7 @@ export default function App() {
               favoritesOnly={favoritesOnly}
               onFavoritesOnly={setFavoritesOnly}
               count={visibleItems.length}
+              total={items.length}
               onBeforeChange={captureFlip}
             />
 
@@ -183,6 +211,14 @@ export default function App() {
           </div>
         </section>
 
+        <Planner
+          items={items}
+          plannerIds={planner}
+          onAdd={addToPlanner}
+          onRemove={removeFromPlanner}
+          onOpen={(item) => setSelectedId(item.id)}
+        />
+
         <StatsSection items={items} favorites={favorites.length} reduced={reduced} />
 
         <footer className="border-t border-white/10 px-5 py-10 md:px-10">
@@ -200,7 +236,10 @@ export default function App() {
         <TicketModal
           item={selected}
           favorite={favorites.includes(selected.id)}
+          inPlanner={planner.includes(selected.id)}
+          total={items.length}
           reduced={reduced}
+          onTogglePlanner={togglePlanner}
           onClose={() => setSelectedId(null)}
           onToggleFavorite={toggleFavorite}
           onNoteChange={changeNote}

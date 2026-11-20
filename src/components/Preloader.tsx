@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { animate, spring } from 'animejs'
 import { gsap, SplitText, useGSAP } from '../lib/gsap'
 import { useAnimeScope } from '../hooks/useAnimeScope'
+import { collections, catalog } from '../data/catalog'
 
 interface Props {
   onDone: () => void
@@ -107,7 +108,9 @@ export function Preloader({ onDone, reduced }: Props) {
         <div ref={bar} className="h-px w-full origin-left bg-neon" />
       </div>
 
-      <div className="absolute bottom-6 mono text-muted">93 TÍTULOS · 8 OBSESIONES</div>
+      <div className="absolute bottom-6 mono text-muted">
+        {catalog.length} TÍTULOS · {collections.length} OBSESIONES
+      </div>
     </div>
   )
 }
