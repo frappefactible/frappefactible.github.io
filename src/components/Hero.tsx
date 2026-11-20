@@ -286,34 +286,58 @@ export function Hero({
                 Gira la ruleta. El archivo decide entre los pendientes que coinciden con tus filtros,
                 evitando los últimos ganadores.
               </p>
-              {usingFallback && (
-                <p className="mono mt-2 text-neon/80">SIN COINCIDENCIAS · USANDO TODO EL ARCHIVO</p>
-              )}
+              <p
+                className={`mono mt-2 h-4 text-neon/80 ${usingFallback ? '' : 'invisible'}`}
+                aria-live="polite"
+              >
+                SIN COINCIDENCIAS · USANDO TODO EL ARCHIVO
+              </p>
             </div>
 
             <div className="my-5 space-y-1.5" aria-live="polite">
-              {candidates.map((candidate, index) => (
-                <div
-                  key={candidate.id}
-                  data-id={candidate.id}
-                  className={`mono truncate border-l-2 px-2 py-1.5 transition-all duration-200 ${
-                    index === active
-                      ? 'reel-chip is-active border-neon bg-neon/10 text-bone'
-                      : 'reel-chip border-white/10 text-muted/70'
-                  }`}
-                  title={candidate.title}
-                >
-                  {String(index + 1).padStart(2, '0')} / {getDisplayTitle(candidate)}
-                </div>
-              ))}
+              {Array.from({ length: 5 }).map((_, index) => {
+                const candidate = candidates[index]
+                if (!candidate) {
+                  return (
+                    <div
+                      key={`empty-${index}`}
+                      className="reel-chip mono flex h-10 items-center border-l-2 border-white/5 px-2 text-muted/30"
+                      aria-hidden="true"
+                    >
+                      {String(index + 1).padStart(2, '0')} —
+                    </div>
+                  )
+                }
+                return (
+                  <div
+                    key={candidate.id}
+                    data-id={candidate.id}
+                    className={`reel-chip mono flex h-10 items-start gap-2 border-l-2 px-2 py-1 transition-all duration-200 ${
+                      index === active
+                        ? 'is-active border-neon bg-neon/10 text-bone'
+                        : 'border-white/10 text-muted/70'
+                    }`}
+                    title={candidate.title}
+                  >
+                    <span className="shrink-0">{String(index + 1).padStart(2, '0')}</span>
+                    <span className="line-clamp-2 text-[11px] leading-[1.25]">
+                      {getDisplayTitle(candidate)}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
 
-            {winner && (
-              <div className="mb-4 border border-neon/50 bg-neon/5 p-3">
-                <div className="mono text-neon">LA SUERTE HA HABLADO</div>
-                <div className="display mt-1 text-xl leading-tight text-bone">
-                  {getDisplayTitle(winner)}
-                </div>
+            {/* Espacio reservado: el panel no cambia de altura al salir el ganador. */}
+            <div
+              className={`mb-4 h-[112px] border border-neon/50 bg-neon/5 p-3 ${winner ? '' : 'invisible'}`}
+              aria-live="polite"
+            >
+              <div className="mono text-neon">LA SUERTE HA HABLADO</div>
+              <div className="display mt-1 line-clamp-2 text-xl leading-tight text-bone">
+                {winner ? getDisplayTitle(winner) : ''}
+              </div>
+              {winner && (
                 <button
                   type="button"
                   onClick={() => onOpen(winner)}
@@ -321,8 +345,8 @@ export function Hero({
                 >
                   Ver ficha →
                 </button>
-              </div>
-            )}
+              )}
+            </div>
 
             <button
               type="button"
@@ -341,7 +365,7 @@ export function Hero({
         <div className="flex w-max animate-[marquee_28s_linear_infinite] gap-10 mono text-muted">
           {Array.from({ length: 2 }).map((_, repeat) => (
             <span key={repeat} className="flex gap-10 whitespace-nowrap">
-              {['PELÍCULAS', 'SERIES', 'ANIMES', 'OVA', 'MANGA', 'DEMONIOS', 'CYBERPUNK', 'GUERRA', 'DESOLACIÓN'].map(
+              {['PELÍCULAS', 'SERIES', 'ANIMES', 'OVA', 'MANGA', 'RULETA', 'RESEÑAS', 'FAVORITOS', 'MI PLAN'].map(
                 (word) => (
                   <span key={word} className="flex items-center gap-10">
                     {word} <span className="text-neon">✳</span>
