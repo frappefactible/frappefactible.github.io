@@ -1,15 +1,29 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { RefObject } from 'react'
 import { animate, spring, stagger } from 'animejs'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useAnimeScope } from '../hooks/useAnimeScope'
 import { collectionById, getDisplayTitle, getOriginalTitle, getYear } from '../data/catalog'
-import type { MediaItem } from '../data/catalog'
+import type { CollectionId, MediaItem } from '../data/catalog'
+import type { FormatFilter, StatusFilter } from './FilterDock'
 
 interface Props {
   items: MediaItem[]
+  format: FormatFilter
+  status: StatusFilter
+  query: string
+  collection: CollectionId | null
+  favoritesOnly: boolean
+  favorites: number[]
+  history: number[]
+  onWin: (id: number) => void
+  spinRef: RefObject<(() => void) | null>
   onOpen: (item: MediaItem) => void
   reduced: boolean
 }
+
+const normalize = (value: string) =>
+  value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
 const shuffle = <T,>(array: T[]): T[] => {
   const copy = [...array]
@@ -23,13 +37,46 @@ const shuffle = <T,>(array: T[]): T[] => {
 const pickRandom = (pool: MediaItem[]): MediaItem =>
   pool[Math.floor(Math.random() * pool.length)]
 
-export function Hero({ items, onOpen, reduced }: Props) {
+export function Hero({
+  items,
+  format,
+  status,
+  query,
+  collection,
+  favoritesOnly,
+  favorites,
+  history,
+  onWin,
+  spinRef,
+  onOpen,
+  reduced,
+}: Props) {
   const root = useRef<HTMLElement>(null)
   const spotlightRef = useRef<HTMLDivElement>(null)
   const runAnime = useAnimeScope(root)
   const timers = useRef<number[]>([])
 
   const pending = useMemo(() => items.filter((item) => item.status === 'Por ver'), [items])
+
+  // La ruleta respeta los filtros activos y evita repetir ganadores recientes.
+  const contextual = useMemo(() => {
+    const term = normalize(query.trim())
+    return pending.filter((item) => {
+      if (format === 'Películas' && item.type !== 'Película') return false
+      if (format === 'Series' && item.type !== 'Serie') return false
+      if (format === 'Animes' && !['Anime', 'Película Anime', 'OVA', 'Manga'].includes(item.type)) return false
+      if (status !== 'Todos' && item.status !== status) return false
+      if (collection && item.collection !== collection) return false
+      if (favoritesOnly && !favorites.includes(item.id)) return false
+      if (term && !normalize(item.title).includes(term)) return false
+      return true
+    })
+  }, [pending, format, status, query, collection, favoritesOnly, favorites])
+
+  const recent = history.slice(-5)
+  const fresh = contextual.filter((item) => !recent.includes(item.id))
+  const roulettePool = fresh.length ? fresh : contextual
+  const usingFallback = contextual.length === 0 && pending.length > 0
   // Sugerencia aleatoria en cada carga de página (prioriza títulos pendientes).
   const [spotlight, setSpotlight] = useState<MediaItem>(() =>
     pickRandom(pending.length ? pending : items),
@@ -85,11 +132,11 @@ export function Hero({ items, onOpen, reduced }: Props) {
   )
 
   const spin = () => {
-    if (spinning || pending.length === 0) return
+    if (spinning || roulettePool.length === 0) return
     setSpinning(true)
     setWinner(null)
 
-    const pool = shuffle(pending).slice(0, 5)
+    const pool = shuffle(roulettePool).slice(0, 5)
     const chosen = pool[Math.floor(Math.random() * pool.length)]
     const chosenIndex = pool.indexOf(chosen)
     setCandidates(pool)
@@ -99,6 +146,7 @@ export function Hero({ items, onOpen, reduced }: Props) {
       setActive(chosenIndex)
       setWinner(chosen)
       setSpinning(false)
+      onWin(chosen.id)
       return
     }
 
@@ -121,6 +169,7 @@ export function Hero({ items, onOpen, reduced }: Props) {
       setActive(chosenIndex)
       setWinner(chosen)
       setSpinning(false)
+      onWin(chosen.id)
     }, 1450)
 
     // Espera a que React aplique el estado ganador antes de animar su fila.
@@ -138,6 +187,8 @@ export function Hero({ items, onOpen, reduced }: Props) {
 
     timers.current.push(interval, end, reveal)
   }
+
+  spinRef.current = spin
 
   const reroll = () => {
     const others = items.filter((item) => item.id !== spotlight.id && item.status === 'Por ver')
@@ -239,8 +290,12 @@ export function Hero({ items, onOpen, reduced }: Props) {
             <div>
               <div className="mono text-neon">¿QUÉ VEO HOY?</div>
               <p className="mt-2 text-xs leading-relaxed text-muted">
-                Gira la ruleta. El archivo decide por ti entre los títulos pendientes.
+                Gira la ruleta. El archivo decide entre los pendientes que coinciden con tus filtros,
+                evitando los últimos ganadores.
               </p>
+              {usingFallback && (
+                <p className="mono mt-2 text-neon/80">SIN COINCIDENCIAS · USANDO TODO EL ARCHIVO</p>
+              )}
             </div>
 
             <div className="my-5 space-y-1.5" aria-live="polite">
@@ -279,7 +334,7 @@ export function Hero({ items, onOpen, reduced }: Props) {
             <button
               type="button"
               onClick={spin}
-              disabled={spinning || pending.length === 0}
+              disabled={spinning || roulettePool.length === 0}
               className="neon-glow w-full bg-neon px-4 py-4 font-display text-2xl tracking-wide text-ink transition-transform duration-200 hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
             >
               {spinning ? 'GIRANDO…' : 'GIRAR LA RULETA'}

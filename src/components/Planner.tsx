@@ -1,14 +1,24 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { animate, spring } from 'animejs'
 import { collectionById, getDisplayTitle, getYear } from '../data/catalog'
-import type { MediaItem } from '../data/catalog'
+import type { MediaItem, PlannerEntry } from '../data/catalog'
 
 interface Props {
   items: MediaItem[]
-  plannerIds: number[]
+  planner: PlannerEntry[]
   onAdd: (id: number) => void
   onRemove: (id: number) => void
+  onNote: (id: number, note: string) => void
+  onMove: (from: number, to: number) => void
   onOpen: (item: MediaItem) => void
 }
+
+type CaptureFormat = 'post' | 'story' | 'square'
+const formats: Array<{ value: CaptureFormat; label: string }> = [
+  { value: 'post', label: 'ARCHIVO' },
+  { value: 'story', label: '9:16' },
+  { value: 'square', label: '1:1' },
+]
 
 const normalize = (value: string) =>
   value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
@@ -31,7 +41,6 @@ const loadThumb = async (src: string): Promise<HTMLImageElement | null> => {
       image.src = url
     })
 
-  // 1) fetch + blob: evita reutilizar la copia en caché sin cabeceras CORS.
   try {
     const response = await fetch(src, { mode: 'cors' })
     if (response.ok) {
@@ -43,21 +52,29 @@ const loadThumb = async (src: string): Promise<HTMLImageElement | null> => {
   } catch {
     // Se prueba con la URL directa más abajo.
   }
-
-  // 2) URL directa con cache-busting.
   return loadImage(`${src}${src.includes('?') ? '&' : '?'}__cors=${Date.now()}`)
 }
 
-export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
+export function Planner({
+  items,
+  planner,
+  onAdd,
+  onRemove,
+  onNote,
+  onMove,
+  onOpen,
+}: Props) {
   const [query, setQuery] = useState('')
-  const [exporting, setExporting] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [captureFormat, setCaptureFormat] = useState<CaptureFormat>('post')
+  const dragIndex = useRef<number | null>(null)
 
   const chosen = useMemo(
     () =>
-      plannerIds
-        .map((id) => items.find((item) => item.id === id))
-        .filter((item): item is MediaItem => Boolean(item)),
-    [plannerIds, items],
+      planner
+        .map((entry) => ({ entry, item: items.find((item) => item.id === entry.id) }))
+        .filter((row): row is { entry: PlannerEntry; item: MediaItem } => Boolean(row.item)),
+    [planner, items],
   )
 
   const results = useMemo(() => {
@@ -66,127 +83,208 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
     return items.filter((item) => normalize(item.title).includes(term)).slice(0, 6)
   }, [query, items])
 
-  const exportCapture = async () => {
-    if (chosen.length === 0) return
-    setExporting(true)
+  const fileName = `factible-plan-${new Date().toISOString().slice(0, 10)}.png`
+
+  const makeCanvas = async (format: CaptureFormat): Promise<HTMLCanvasElement> => {
+    await document.fonts.ready
     try {
-      await document.fonts.ready
-      try {
-        await document.fonts.load('78px Anton')
-        await document.fonts.load('14px "DM Mono"')
-      } catch {
-        // Se usan las fuentes de respaldo del sistema.
+      await document.fonts.load('78px Anton')
+      await document.fonts.load('14px "DM Mono"')
+    } catch {
+      // Fuentes de respaldo del sistema.
+    }
+
+    const width = 1080
+    const bottomPad = format === 'story' ? 150 : format === 'square' ? 120 : 130
+    const height =
+      format === 'post' ? 352 + chosen.length * 116 + bottomPad : format === 'story' ? 1920 : 1080
+    const available = height - 352 - bottomPad
+    const rowHeight = Math.max(48, Math.min(116, Math.floor(available / Math.max(chosen.length, 1))))
+    const f = Math.min(1, rowHeight / 110)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return canvas
+
+    ctx.fillStyle = '#08080a'
+    ctx.fillRect(0, 0, width, height)
+
+    const glow = ctx.createRadialGradient(140, 90, 10, 140, 90, 700)
+    glow.addColorStop(0, 'rgba(255,43,43,0.22)')
+    glow.addColorStop(1, 'rgba(255,43,43,0)')
+    ctx.fillStyle = glow
+    ctx.fillRect(0, 0, width, height)
+
+    ctx.strokeStyle = 'rgba(255,43,43,0.55)'
+    ctx.lineWidth = 3
+    ctx.strokeRect(12, 12, width - 24, height - 24)
+
+    ctx.fillStyle = '#ff2b2b'
+    ctx.fillRect(48, 48, 60, 60)
+    ctx.fillStyle = '#08080a'
+    ctx.font = '400 42px Anton, Impact, sans-serif'
+    ctx.fillText('F', 66, 92)
+    ctx.fillStyle = '#f4eee7'
+    ctx.font = '400 30px Anton, Impact, sans-serif'
+    ctx.fillText('FACTIBLE', 124, 84)
+    ctx.fillStyle = '#8c8781'
+    ctx.font = '500 13px "DM Mono", monospace'
+    ctx.fillText('MI CARTELERA PERSONAL FAVORITA <3', 124, 105)
+
+    ctx.fillStyle = '#f4eee7'
+    ctx.font = '400 80px Anton, Impact, sans-serif'
+    ctx.fillText('LO QUE AHORA', 48, 196)
+    ctx.fillText('ESTOY VIENDO', 48, 278)
+
+    ctx.fillStyle = '#ff2b2b'
+    ctx.font = '500 14px "DM Mono", monospace'
+    ctx.fillText(
+      new Date()
+        .toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
+        .toUpperCase(),
+      48,
+      314,
+    )
+
+    ctx.strokeStyle = 'rgba(255,43,43,0.5)'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(48, 334)
+    ctx.lineTo(width - 48, 334)
+    ctx.stroke()
+
+    const thumbs = await Promise.all(chosen.map((row) => loadThumb(row.item.imageUrl)))
+
+    chosen.forEach(({ entry, item }, index) => {
+      const y = 352 + index * rowHeight
+      const collection = collectionById[item.collection]
+
+      ctx.fillStyle = 'rgba(244,238,231,0.04)'
+      ctx.fillRect(48, y, width - 96, rowHeight - 8)
+      ctx.fillStyle = collection.color
+      ctx.fillRect(48, y, 4, rowHeight - 8)
+
+      const thumb = thumbs[index]
+      const thumbW = Math.min(64, rowHeight * 0.62)
+      if (thumb) {
+        ctx.drawImage(thumb, 70, y + 4, thumbW, rowHeight - 16)
+      } else {
+        ctx.fillStyle = 'rgba(244,238,231,0.06)'
+        ctx.fillRect(70, y + 4, thumbW, rowHeight - 16)
       }
 
-      const width = 1080
-      const rowHeight = 116
-      const height = 380 + chosen.length * rowHeight + 130
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      if (!ctx) return
-
-      ctx.fillStyle = '#08080a'
-      ctx.fillRect(0, 0, width, height)
-
-      const glow = ctx.createRadialGradient(140, 90, 10, 140, 90, 700)
-      glow.addColorStop(0, 'rgba(255,43,43,0.22)')
-      glow.addColorStop(1, 'rgba(255,43,43,0)')
-      ctx.fillStyle = glow
-      ctx.fillRect(0, 0, width, height)
-
-      ctx.strokeStyle = 'rgba(255,43,43,0.55)'
-      ctx.lineWidth = 3
-      ctx.strokeRect(12, 12, width - 24, height - 24)
-
-      // Cabecera
+      const left = 70 + thumbW + 18
       ctx.fillStyle = '#ff2b2b'
-      ctx.fillRect(48, 48, 60, 60)
-      ctx.fillStyle = '#08080a'
-      ctx.font = '400 42px Anton, Impact, sans-serif'
-      ctx.fillText('F', 66, 92)
-      ctx.fillStyle = '#f4eee7'
-      ctx.font = '400 30px Anton, Impact, sans-serif'
-      ctx.fillText('FACTIBLE', 124, 84)
-      ctx.fillStyle = '#8c8781'
       ctx.font = '500 13px "DM Mono", monospace'
-      ctx.fillText('MI CARTELERA PERSONAL FAVORITA <3', 124, 105)
+      ctx.fillText(String(index + 1).padStart(2, '0'), left, y + 18 * f + 6)
 
       ctx.fillStyle = '#f4eee7'
-      ctx.font = '400 80px Anton, Impact, sans-serif'
-      ctx.fillText('LO QUE AHORA', 48, 196)
-      ctx.fillText('ESTOY VIENDO', 48, 278)
+      ctx.font = `400 ${Math.round(32 * f)}px Anton, Impact, sans-serif`
+      const title = getDisplayTitle(item)
+      ctx.fillText(title.length > 46 ? `${title.slice(0, 44)}…` : title, left, y + 52 * f + 6)
 
-      ctx.fillStyle = '#ff2b2b'
-      ctx.font = '500 14px "DM Mono", monospace'
+      ctx.fillStyle = '#8c8781'
+      ctx.font = `500 ${Math.round(12 * f)}px "DM Mono", monospace`
       ctx.fillText(
-        new Date()
-          .toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })
-          .toUpperCase(),
-        48,
-        314,
+        `${item.type.toUpperCase()}  /  ${getYear(item)}  /  ${collection.name.toUpperCase()}`,
+        left,
+        y + 76 * f + 6,
       )
 
-      ctx.strokeStyle = 'rgba(255,43,43,0.5)'
-      ctx.lineWidth = 1
-      ctx.beginPath()
-      ctx.moveTo(48, 334)
-      ctx.lineTo(width - 48, 334)
-      ctx.stroke()
+      if (entry.note.trim() && rowHeight > 78) {
+        ctx.fillStyle = '#ff8a7a'
+        ctx.font = `400 ${Math.round(13 * f)}px "DM Mono", monospace`
+        ctx.fillText(`↳ ${entry.note.trim().slice(0, 60)}`, left, y + 98 * f + 6)
+      }
+    })
 
-      const thumbs = await Promise.all(chosen.map((item) => loadThumb(item.imageUrl)))
+    const footerY = height - 48
+    ctx.fillStyle = '#8c8781'
+    ctx.font = '500 13px "DM Mono", monospace'
+    ctx.fillText(`${chosen.length} TÍTULOS`, 48, footerY)
+    ctx.fillStyle = '#ff2b2b'
+    ctx.fillText('frappefactible.github.io', width - 264, footerY)
 
-      chosen.forEach((item, index) => {
-        const y = 352 + index * rowHeight
-        const collection = collectionById[item.collection]
+    return canvas
+  }
 
-        ctx.fillStyle = 'rgba(244,238,231,0.04)'
-        ctx.fillRect(48, y, width - 96, rowHeight - 12)
-        ctx.fillStyle = collection.color
-        ctx.fillRect(48, y, 4, rowHeight - 12)
+  const getBlob = async (format: CaptureFormat): Promise<Blob | null> => {
+    const canvas = await makeCanvas(format)
+    return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'))
+  }
 
-        const thumb = thumbs[index]
-        if (thumb) {
-          ctx.drawImage(thumb, 70, y + 8, 64, rowHeight - 28)
-        } else {
-          // Si la imagen remota falla, bloque neutro: nunca un icono sustituto.
-          ctx.fillStyle = 'rgba(244,238,231,0.06)'
-          ctx.fillRect(70, y + 8, 64, rowHeight - 28)
-        }
+  const saveBlob = (blob: Blob) => {
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.click()
+    URL.revokeObjectURL(url)
+  }
 
-        ctx.fillStyle = '#ff2b2b'
-        ctx.font = '500 13px "DM Mono", monospace'
-        ctx.fillText(String(index + 1).padStart(2, '0'), 152, y + 30)
-
-        ctx.fillStyle = '#f4eee7'
-        ctx.font = '400 32px Anton, Impact, sans-serif'
-        const title = getDisplayTitle(item)
-        ctx.fillText(title.length > 44 ? `${title.slice(0, 42)}…` : title, 152, y + 62)
-
-        ctx.fillStyle = '#8c8781'
-        ctx.font = '500 12px "DM Mono", monospace'
-        ctx.fillText(
-          `${item.type.toUpperCase()}  /  ${getYear(item)}  /  ${collection.name.toUpperCase()}`,
-          152,
-          y + 86,
-        )
-      })
-
-      const footerY = 380 + chosen.length * rowHeight + 42
-      ctx.fillStyle = '#8c8781'
-      ctx.font = '500 13px "DM Mono", monospace'
-      ctx.fillText(`${chosen.length} TÍTULOS`, 48, footerY)
-      ctx.fillStyle = '#ff2b2b'
-      ctx.fillText('frappefactible.github.io', width - 264, footerY)
-
-      const link = document.createElement('a')
-      link.download = `factible-plan-${new Date().toISOString().slice(0, 10)}.png`
-      link.href = canvas.toDataURL('image/png')
-      link.click()
+  const download = async () => {
+    if (!chosen.length) return
+    setBusy(true)
+    try {
+      const blob = await getBlob(captureFormat)
+      if (blob) saveBlob(blob)
     } finally {
-      setExporting(false)
+      setBusy(false)
     }
+  }
+
+  const share = async () => {
+    if (!chosen.length) return
+    setBusy(true)
+    try {
+      const blob = await getBlob(captureFormat)
+      if (!blob) return
+      const file = new File([blob], fileName, { type: 'image/png' })
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Mi cartelera personal',
+            text: 'Mi cartelera personal favorita <3',
+          })
+          return
+        } catch {
+          // El usuario canceló: se descarga igual.
+        }
+      }
+      saveBlob(blob)
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const copyList = async () => {
+    const text = [
+      'MI CARTELERA PERSONAL FAVORITA <3',
+      ...chosen.map(
+        ({ entry, item }, index) =>
+          `${index + 1}. ${getDisplayTitle(item)}${entry.note.trim() ? ` — ${entry.note.trim()}` : ''}`,
+      ),
+      'frappefactible.github.io',
+    ].join('\n')
+    try {
+      await navigator.clipboard.writeText(text)
+    } catch {
+      const area = document.createElement('textarea')
+      area.value = text
+      document.body.appendChild(area)
+      area.select()
+      document.execCommand('copy')
+      area.remove()
+    }
+  }
+
+  const drop = (target: number) => {
+    const source = dragIndex.current
+    dragIndex.current = null
+    if (source !== null && source !== target) onMove(source, target)
   }
 
   return (
@@ -204,7 +302,6 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
         </div>
 
         <div className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[0.9fr_1.1fr]">
-          {/* Buscador para añadir */}
           <div className="min-w-0 border border-white/10 bg-ink p-5">
             <div className="mono text-muted">AÑADIR UN TÍTULO</div>
             <label className="mt-3 flex items-center gap-2 border border-white/15 bg-white/5 px-3 py-3 focus-within:border-neon">
@@ -225,29 +322,13 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
                   <p className="mono py-4 text-muted">SIN RESULTADOS</p>
                 ) : (
                   results.map((item) => {
-                    const already = plannerIds.includes(item.id)
+                    const already = planner.some((entry) => entry.id === item.id)
                     return (
-                      <div
-                        key={item.id}
-                        className="flex items-center gap-3 bg-white/[0.03] p-2"
-                      >
-                        <img
-                          src={item.imageUrl}
-                          alt=""
-                          className="h-14 w-10 shrink-0 object-cover"
-                          loading="lazy"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => onOpen(item)}
-                          className="min-w-0 flex-1 text-left"
-                        >
-                          <span className="block truncate text-sm text-bone">
-                            {getDisplayTitle(item)}
-                          </span>
-                          <span className="mono text-muted">
-                            {item.type} · {getYear(item)}
-                          </span>
+                      <div key={item.id} className="flex items-center gap-3 bg-white/[0.03] p-2">
+                        <img src={item.imageUrl} alt="" className="h-14 w-10 shrink-0 object-cover" loading="lazy" />
+                        <button type="button" onClick={() => onOpen(item)} className="min-w-0 flex-1 text-left">
+                          <span className="block truncate text-sm text-bone">{getDisplayTitle(item)}</span>
+                          <span className="mono text-muted">{item.type} · {getYear(item)}</span>
                         </button>
                         <button
                           type="button"
@@ -271,7 +352,6 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
             )}
           </div>
 
-          {/* Lista actual */}
           <div className="min-w-0 border border-white/10 bg-ink p-5">
             <div className="flex items-center justify-between">
               <div className="mono text-muted">LO QUE AHORA ESTOY VIENDO</div>
@@ -285,38 +365,71 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
               </div>
             ) : (
               <ol className="mt-3 space-y-2">
-                {chosen.map((item, index) => {
+                {chosen.map(({ entry, item }, index) => {
                   const collection = collectionById[item.collection]
                   return (
                     <li
-                      key={item.id}
-                      className="flex items-center gap-3 border-l-2 bg-white/[0.03] p-2"
+                      key={entry.id}
+                      draggable
+                      onDragStart={(event) => {
+                        dragIndex.current = index
+                        animate(event.currentTarget, {
+                          scale: 0.97,
+                          ease: spring({ bounce: 0.4, duration: 300 }),
+                        })
+                      }}
+                      onDragOver={(event) => event.preventDefault()}
+                      onDrop={() => drop(index)}
+                      onDragEnd={(event) => {
+                        dragIndex.current = null
+                        animate(event.currentTarget, {
+                          scale: 1,
+                          ease: spring({ bounce: 0.5, duration: 400 }),
+                        })
+                      }}
+                      className="flex cursor-grab items-center gap-3 border-l-2 bg-white/[0.03] p-2 active:cursor-grabbing"
                       style={{ borderColor: collection.color }}
                     >
-                      <span className="mono w-6 shrink-0 text-neon">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <img
-                        src={item.imageUrl}
-                        alt=""
-                        className="h-16 w-11 shrink-0 object-cover"
-                        loading="lazy"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => onOpen(item)}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <span className="block truncate font-display text-lg uppercase leading-none text-bone">
+                      <span className="mono w-6 shrink-0 text-neon">{String(index + 1).padStart(2, '0')}</span>
+                      <img src={item.imageUrl} alt="" className="h-16 w-11 shrink-0 object-cover" loading="lazy" />
+                      <div className="min-w-0 flex-1">
+                        <button type="button" onClick={() => onOpen(item)} className="block w-full truncate text-left font-display text-lg uppercase leading-none text-bone">
                           {getDisplayTitle(item)}
-                        </span>
+                        </button>
                         <span className="mono mt-1 block truncate text-muted">
                           {collection.glyph} {collection.name} · {item.type}
                         </span>
-                      </button>
+                        <input
+                          value={entry.note}
+                          onChange={(event) => onNote(entry.id, event.target.value)}
+                          placeholder="nota (capítulo, día…)"
+                          aria-label={`Nota para ${getDisplayTitle(item)}`}
+                          className="mt-1 w-full border-b border-white/10 bg-transparent pb-0.5 mono text-xs text-bone placeholder:text-muted/60 focus:border-neon focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-1">
+                        <button
+                          type="button"
+                          onClick={() => onMove(index, Math.max(0, index - 1))}
+                          disabled={index === 0}
+                          aria-label="Subir en la lista"
+                          className="grid h-6 w-8 place-items-center border border-white/15 text-xs text-muted hover:border-neon hover:text-neon disabled:opacity-30"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onMove(index, Math.min(chosen.length - 1, index + 1))}
+                          disabled={index === chosen.length - 1}
+                          aria-label="Bajar en la lista"
+                          className="grid h-6 w-8 place-items-center border border-white/15 text-xs text-muted hover:border-neon hover:text-neon disabled:opacity-30"
+                        >
+                          ↓
+                        </button>
+                      </div>
                       <button
                         type="button"
-                        onClick={() => onRemove(item.id)}
+                        onClick={() => onRemove(entry.id)}
                         aria-label={`Quitar ${getDisplayTitle(item)} del plan`}
                         className="grid h-9 w-9 shrink-0 place-items-center border border-white/15 text-muted transition-colors hover:border-neon hover:text-neon"
                       >
@@ -328,19 +441,54 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
               </ol>
             )}
 
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span className="mono mr-1 text-muted">CAPTURA</span>
+              {formats.map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setCaptureFormat(option.value)}
+                  aria-pressed={captureFormat === option.value}
+                  className={`border px-2 py-1.5 mono ${
+                    captureFormat === option.value
+                      ? 'border-neon bg-neon/15 text-neon'
+                      : 'border-white/15 text-muted hover:text-bone'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+
             <div className="mt-5 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={exportCapture}
-                disabled={chosen.length === 0 || exporting}
+                onClick={download}
+                disabled={!chosen.length || busy}
                 className="neon-glow bg-neon px-5 py-3 mono text-ink transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                {exporting ? 'GENERANDO…' : '↓ DESCARGAR CAPTURA'}
+                {busy ? 'GENERANDO…' : '↓ DESCARGAR CAPTURA'}
+              </button>
+              <button
+                type="button"
+                onClick={share}
+                disabled={!chosen.length || busy}
+                className="border border-neon/60 px-5 py-3 mono text-neon transition-colors hover:bg-neon/10 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ↗ COMPARTIR
+              </button>
+              <button
+                type="button"
+                onClick={copyList}
+                disabled={!chosen.length}
+                className="border border-white/25 px-5 py-3 mono text-muted transition-colors hover:border-bone hover:text-bone disabled:opacity-40"
+              >
+                ⧉ COPIAR TEXTO
               </button>
               {chosen.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => [...chosen].forEach((item) => onRemove(item.id))}
+                  onClick={() => [...chosen].forEach((row) => onRemove(row.entry.id))}
                   className="border border-white/25 px-5 py-3 mono text-muted transition-colors hover:border-neon hover:text-neon"
                 >
                   VACIAR LISTA

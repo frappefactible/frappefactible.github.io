@@ -1,3 +1,6 @@
+import type { RefObject } from 'react'
+import type { SortMode } from '../data/catalog'
+
 export type FormatFilter = 'Todos' | 'Películas' | 'Series' | 'Animes'
 export type StatusFilter = 'Todos' | 'Por ver' | 'Visto'
 
@@ -10,6 +13,9 @@ interface Props {
   onQuery: (value: string) => void
   favoritesOnly: boolean
   onFavoritesOnly: (value: boolean) => void
+  sort: SortMode
+  onSort: (value: SortMode) => void
+  searchRef: RefObject<HTMLInputElement | null>
   count: number
   total: number
   onBeforeChange: () => void
@@ -17,6 +23,13 @@ interface Props {
 
 const formats: FormatFilter[] = ['Todos', 'Películas', 'Series', 'Animes']
 const statuses: StatusFilter[] = ['Todos', 'Por ver', 'Visto']
+const sorts: Array<{ value: SortMode; label: string }> = [
+  { value: 'archivo', label: 'Archivo' },
+  { value: 'anio', label: 'Año' },
+  { value: 'titulo', label: 'A–Z' },
+  { value: 'estado', label: 'Estado' },
+  { value: 'favoritos', label: 'Favoritos' },
+]
 
 export function FilterDock({
   format,
@@ -27,6 +40,9 @@ export function FilterDock({
   onQuery,
   favoritesOnly,
   onFavoritesOnly,
+  sort,
+  onSort,
+  searchRef,
   count,
   total,
   onBeforeChange,
@@ -77,10 +93,27 @@ export function FilterDock({
           ))}
         </div>
 
+        <label className="flex items-center gap-2 mono text-muted">
+          ORDEN
+          <select
+            value={sort}
+            onChange={(event) => change(onSort, event.target.value as SortMode)}
+            aria-label="Ordenar títulos"
+            className="border border-white/15 bg-ink px-2 py-2 mono text-bone focus:border-neon focus:outline-none"
+          >
+            {sorts.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
         <div className="ml-auto flex flex-1 items-center gap-3 sm:flex-none">
           <label className="flex min-w-0 flex-1 items-center gap-2 border border-white/15 bg-white/5 px-3 py-2 focus-within:border-neon sm:w-64">
             <span className="mono text-neon" aria-hidden="true">⌕</span>
             <input
+              ref={searchRef}
               type="search"
               value={query}
               onChange={(event) => change(onQuery, event.target.value)}
@@ -89,6 +122,7 @@ export function FilterDock({
               className="w-full bg-transparent mono text-bone placeholder:text-muted/70 focus:outline-none"
             />
           </label>
+          <span className="hidden mono text-muted/70 xl:inline" aria-hidden="true">/ BUSCAR</span>
 
           <button
             type="button"

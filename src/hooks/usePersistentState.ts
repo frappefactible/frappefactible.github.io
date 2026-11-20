@@ -1,11 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
 
 /** Estado sincronizado con localStorage. Funciona también si el storage está bloqueado. */
-export function usePersistentState<T>(key: string, initial: T) {
+export function usePersistentState<T>(
+  key: string,
+  initial: T,
+  revive?: (raw: unknown) => T,
+) {
   const [value, setValue] = useState<T>(() => {
     try {
       const raw = window.localStorage.getItem(key)
-      return raw ? (JSON.parse(raw) as T) : initial
+      if (!raw) return initial
+      const parsed: unknown = JSON.parse(raw)
+      return revive ? revive(parsed) : (parsed as T)
     } catch {
       return initial
     }

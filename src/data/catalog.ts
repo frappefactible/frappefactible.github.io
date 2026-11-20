@@ -14,6 +14,8 @@ export type MediaType =
 
 export type MediaStatus = 'Por ver' | 'Visto'
 
+export type SortMode = 'archivo' | 'anio' | 'titulo' | 'estado' | 'favoritos'
+
 export type CollectionId =
   | 'accion'
   | 'crimen'
@@ -30,6 +32,11 @@ export interface Collection {
   tagline: string
   color: string
   glyph: string
+}
+
+export interface PlannerEntry {
+  id: number
+  note: string
 }
 
 export interface MediaItem {

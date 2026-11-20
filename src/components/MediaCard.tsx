@@ -12,13 +12,14 @@ interface Props {
 
 export function MediaCard({ item, favorite, visible, onOpen, onToggleFavorite }: Props) {
   const [failed, setFailed] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const collection = collectionById[item.collection]
 
   return (
     <article
       className={`poster-card media-card aspect-[2/3] border border-white/10 ${visible ? '' : 'hidden'}`}
       data-seen={item.status === 'Visto'}
-      style={{ borderTop: `2px solid ${collection.color}` }}
+      style={{ borderTop: `2px solid ${collection.color}`, backgroundColor: `${collection.color}18` }}
     >
       <button
         type="button"
@@ -39,8 +40,11 @@ export function MediaCard({ item, favorite, visible, onOpen, onToggleFavorite }:
             src={item.imageUrl}
             alt={`Póster de ${getDisplayTitle(item)}`}
             loading="lazy"
+            onLoad={() => setLoaded(true)}
             onError={() => setFailed(true)}
-            className="h-full w-full object-cover"
+            className={`h-full w-full object-cover transition-all duration-700 ease-cinema ${
+              loaded ? 'scale-100 opacity-100 blur-0' : 'scale-105 opacity-0 blur-md'
+            }`}
           />
         )}
 

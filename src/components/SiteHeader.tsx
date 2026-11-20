@@ -26,6 +26,14 @@ export function SiteHeader({ total, favorites, seen }: Props) {
           <span className="hidden sm:inline"><b className="text-bone">{total}</b> TÍTULOS</span>
           <span className="hidden sm:inline"><b className="text-bone">{seen}</b> VISTOS</span>
           <span className="text-neon">♥ {favorites}</span>
+          <span className="hidden w-16 sm:block" title={`${seen} de ${total} vistos`}>
+            <span className="block h-1 w-full bg-white/10">
+              <span
+                className="block h-full bg-neon transition-all duration-700"
+                style={{ width: `${total ? (seen / total) * 100 : 0}%` }}
+              />
+            </span>
+          </span>
         </div>
       </div>
     </header>

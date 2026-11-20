@@ -1,7 +1,7 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flip } from './lib/gsap'
-import { catalog } from './data/catalog'
-import type { CollectionId, MediaItem, MediaStatus } from './data/catalog'
+import { catalog, getDisplayTitle, getYear } from './data/catalog'
+import type { CollectionId, MediaItem, MediaStatus, PlannerEntry, SortMode } from './data/catalog'
 import { usePersistentState } from './hooks/usePersistentState'
 import { useReducedMotion } from './hooks/useReducedMotion'
 import { useLenis } from './hooks/useLenis'
@@ -16,12 +16,51 @@ import { TicketModal } from './components/TicketModal'
 import { StatsSection } from './components/StatsSection'
 import { Planner } from './components/Planner'
 import { Stickers } from './components/Stickers'
+import { DataBackup } from './components/DataBackup'
+import type { BackupData } from './components/DataBackup'
 
 type Overrides = Record<number, Partial<Pick<MediaItem, 'status' | 'note'>>>
+type LocalData = Omit<BackupData, 'version' | 'exportedAt'>
 
 const ANIME_TYPES = ['Anime', 'Película Anime', 'OVA', 'Manga']
 const normalize = (value: string) =>
   value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+
+const revivePlanner = (raw: unknown): PlannerEntry[] =>
+  Array.isArray(raw)
+    ? raw
+        .map((entry): PlannerEntry | null => {
+          if (typeof entry === 'number') return { id: entry, note: '' }
+          if (entry && typeof entry === 'object' && typeof (entry as PlannerEntry).id === 'number') {
+            const value = entry as PlannerEntry
+            return { id: value.id, note: String(value.note ?? '') }
+          }
+          return null
+        })
+        .filter((entry): entry is PlannerEntry => Boolean(entry))
+    : []
+
+const sortItems = (list: MediaItem[], mode: SortMode, favorites: number[]): MediaItem[] => {
+  const sorted = [...list]
+  switch (mode) {
+    case 'anio':
+      return sorted.sort((a, b) => Number(getYear(b)) - Number(getYear(a)) || a.id - b.id)
+    case 'titulo':
+      return sorted.sort((a, b) =>
+        getDisplayTitle(a).localeCompare(getDisplayTitle(b), 'es', { sensitivity: 'base' }),
+      )
+    case 'estado':
+      return sorted.sort(
+        (a, b) => (a.status === 'Visto' ? 1 : 0) - (b.status === 'Visto' ? 1 : 0) || a.id - b.id,
+      )
+    case 'favoritos':
+      return sorted.sort(
+        (a, b) => Number(favorites.includes(b.id)) - Number(favorites.includes(a.id)) || a.id - b.id,
+      )
+    default:
+      return sorted.sort((a, b) => a.id - b.id)
+  }
+}
 
 export default function App() {
   const reduced = useReducedMotion()
@@ -34,11 +73,20 @@ export default function App() {
   const [favoritesOnly, setFavoritesOnly] = useState(false)
   const [collection, setCollection] = useState<CollectionId | null>(null)
   const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [showTop, setShowTop] = useState(false)
 
   const [favorites, setFavorites] = usePersistentState<number[]>('factible:favorites:v1', [])
-  const [planner, setPlanner] = usePersistentState<number[]>('factible:planner:v1', [])
+  const [planner, setPlanner] = usePersistentState<PlannerEntry[]>(
+    'factible:planner:v1',
+    [],
+    revivePlanner,
+  )
   const [overrides, setOverrides] = usePersistentState<Overrides>('factible:overrides:v1', {})
+  const [sort, setSort] = usePersistentState<SortMode>('factible:sort:v1', 'archivo')
+  const [history, setHistory] = usePersistentState<number[]>('factible:roulette-history:v1', [])
 
+  const searchRef = useRef<HTMLInputElement>(null)
+  const spinRef = useRef<(() => void) | null>(null)
   const flipState = useRef<ReturnType<typeof Flip.getState> | null>(null)
 
   const items = useMemo(
@@ -46,14 +94,18 @@ export default function App() {
     [overrides],
   )
 
-  /** Captura la posición de las tarjetas ANTES de que React reordene el grid. */
   const captureFlip = useCallback(() => {
     if (!reduced) flipState.current = Flip.getState('.media-card')
   }, [reduced])
 
+  const sortedCatalog = useMemo(
+    () => sortItems(items, sort, favorites),
+    [items, sort, favorites],
+  )
+
   const visibleItems = useMemo(() => {
     const term = normalize(query.trim())
-    return items.filter((item) => {
+    const filtered = sortedCatalog.filter((item) => {
       if (format === 'Películas' && item.type !== 'Película') return false
       if (format === 'Series' && item.type !== 'Serie') return false
       if (format === 'Animes' && !ANIME_TYPES.includes(item.type)) return false
@@ -63,7 +115,8 @@ export default function App() {
       if (term && !normalize(item.title).includes(term)) return false
       return true
     })
-  }, [items, format, status, collection, favoritesOnly, favorites, query])
+    return filtered
+  }, [sortedCatalog, format, status, collection, favoritesOnly, favorites, query])
 
   const visibleIds = useMemo(
     () => new Set(visibleItems.map((item) => item.id)),
@@ -77,7 +130,34 @@ export default function App() {
   }, [items])
 
   const selected = selectedId === null ? null : items.find((item) => item.id === selectedId) ?? null
+  const selectedIndex = selectedId === null ? -1 : visibleItems.findIndex((item) => item.id === selectedId)
   const seenCount = items.filter((item) => item.status === 'Visto').length
+
+  useEffect(() => {
+    const onScroll = () => setShowTop(window.scrollY > 700)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (selectedId !== null) return
+      const target = event.target as HTMLElement | null
+      const typing =
+        !!target &&
+        (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)
+      if (typing) return
+      if (event.key === '/') {
+        event.preventDefault()
+        searchRef.current?.focus()
+      } else if (event.key.toLowerCase() === 'r') {
+        event.preventDefault()
+        spinRef.current?.()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [selectedId])
 
   const toggleFavorite = useCallback(
     (id: number) => {
@@ -106,14 +186,16 @@ export default function App() {
 
   const addToPlanner = useCallback(
     (id: number) => {
-      setPlanner((previous) => (previous.includes(id) ? previous : [...previous, id]))
+      setPlanner((previous) =>
+        previous.some((entry) => entry.id === id) ? previous : [...previous, { id, note: '' }],
+      )
     },
     [setPlanner],
   )
 
   const removeFromPlanner = useCallback(
     (id: number) => {
-      setPlanner((previous) => previous.filter((value) => value !== id))
+      setPlanner((previous) => previous.filter((entry) => entry.id !== id))
     },
     [setPlanner],
   )
@@ -121,10 +203,40 @@ export default function App() {
   const togglePlanner = useCallback(
     (id: number) => {
       setPlanner((previous) =>
-        previous.includes(id) ? previous.filter((value) => value !== id) : [...previous, id],
+        previous.some((entry) => entry.id === id)
+          ? previous.filter((entry) => entry.id !== id)
+          : [...previous, { id, note: '' }],
       )
     },
     [setPlanner],
+  )
+
+  const changePlannerNote = useCallback(
+    (id: number, note: string) => {
+      setPlanner((previous) =>
+        previous.map((entry) => (entry.id === id ? { ...entry, note } : entry)),
+      )
+    },
+    [setPlanner],
+  )
+
+  const movePlanner = useCallback(
+    (from: number, to: number) => {
+      setPlanner((previous) => {
+        const next = [...previous]
+        const [moved] = next.splice(from, 1)
+        next.splice(to, 0, moved)
+        return next
+      })
+    },
+    [setPlanner],
+  )
+
+  const onRouletteWin = useCallback(
+    (id: number) => {
+      setHistory((previous) => [...previous.filter((value) => value !== id), id].slice(-5))
+    },
+    [setHistory],
   )
 
   const resetFilters = () => {
@@ -134,6 +246,26 @@ export default function App() {
     setQuery('')
     setFavoritesOnly(false)
     setCollection(null)
+  }
+
+  const backupData: LocalData = { favorites, planner, overrides, sort, history }
+
+  const importBackup = (data: LocalData) => {
+    captureFlip()
+    setFavorites(data.favorites)
+    setPlanner(data.planner)
+    setOverrides(data.overrides)
+    setSort(data.sort)
+    setHistory(data.history)
+  }
+
+  const resetAll = () => {
+    captureFlip()
+    setFavorites([])
+    setPlanner([])
+    setOverrides({})
+    setSort('archivo')
+    setHistory([])
   }
 
   const hasFilters =
@@ -146,7 +278,20 @@ export default function App() {
       <SiteHeader total={items.length} favorites={favorites.length} seen={seenCount} />
 
       <main>
-        <Hero items={items} onOpen={(item) => setSelectedId(item.id)} reduced={reduced} />
+        <Hero
+          items={items}
+          format={format}
+          status={status}
+          query={query}
+          collection={collection}
+          favoritesOnly={favoritesOnly}
+          favorites={favorites}
+          history={history}
+          onWin={onRouletteWin}
+          spinRef={spinRef}
+          onOpen={(item) => setSelectedId(item.id)}
+          reduced={reduced}
+        />
 
         <CollectionStrip
           active={collection}
@@ -163,7 +308,7 @@ export default function App() {
                 <h2 className="display mt-2 text-5xl md:text-7xl">TODOS LOS TÍTULOS</h2>
               </div>
               <p className="mono text-muted">
-                ORDEN: ARCHIVO / 001 — {String(items.length).padStart(3, '0')}
+                ORDEN: {sort.toUpperCase()} / 001 — {String(items.length).padStart(3, '0')}
               </p>
             </div>
 
@@ -176,6 +321,9 @@ export default function App() {
               onQuery={setQuery}
               favoritesOnly={favoritesOnly}
               onFavoritesOnly={setFavoritesOnly}
+              sort={sort}
+              onSort={setSort}
+              searchRef={searchRef}
               count={visibleItems.length}
               total={items.length}
               onBeforeChange={captureFlip}
@@ -199,7 +347,7 @@ export default function App() {
               </div>
             ) : (
               <MediaGrid
-                items={items}
+                items={sortedCatalog}
                 visibleIds={visibleIds}
                 flipState={flipState}
                 favorites={favorites}
@@ -213,22 +361,38 @@ export default function App() {
 
         <Planner
           items={items}
-          plannerIds={planner}
+          planner={planner}
           onAdd={addToPlanner}
           onRemove={removeFromPlanner}
+          onNote={changePlannerNote}
+          onMove={movePlanner}
           onOpen={(item) => setSelectedId(item.id)}
         />
 
         <StatsSection items={items} favorites={favorites.length} reduced={reduced} />
 
         <footer className="border-t border-white/10 px-5 py-10 md:px-10">
-          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-4 mono text-muted">
-            <span>FACTIBLE · CARTELERA NOCTURNA</span>
-            <span>HECHO SIN BASE DE DATOS · SOLO ARCHIVOS Y UN POCO DE OBSESIÓN</span>
-            <a href="#top" className="text-neon hover:underline">VOLVER ARRIBA ↑</a>
+          <div className="mx-auto max-w-[1600px]">
+            <div className="flex flex-wrap items-center justify-between gap-4 mono text-muted">
+              <span>FACTIBLE · CARTELERA NOCTURNA</span>
+              <span>HECHO SIN BASE DE DATOS · SOLO ARCHIVOS Y UN POCO DE OBSESIÓN</span>
+              <a href="#top" className="text-neon hover:underline">VOLVER ARRIBA ↑</a>
+            </div>
+            <DataBackup data={backupData} onImport={importBackup} onReset={resetAll} />
           </div>
         </footer>
       </main>
+
+      {showTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })}
+          aria-label="Volver arriba"
+          className="fixed bottom-5 left-5 z-40 border border-neon bg-ink px-3 py-3 mono text-neon transition-colors hover:bg-neon hover:text-ink"
+        >
+          ↑ ARRIBA
+        </button>
+      )}
 
       <Stickers reduced={reduced} />
 
@@ -236,9 +400,13 @@ export default function App() {
         <TicketModal
           item={selected}
           favorite={favorites.includes(selected.id)}
-          inPlanner={planner.includes(selected.id)}
+          inPlanner={planner.some((entry) => entry.id === selected.id)}
           total={items.length}
           reduced={reduced}
+          canPrev={selectedIndex > 0}
+          canNext={selectedIndex >= 0 && selectedIndex < visibleItems.length - 1}
+          onPrev={() => openVisibleAt(selectedIndex - 1)}
+          onNext={() => openVisibleAt(selectedIndex + 1)}
           onTogglePlanner={togglePlanner}
           onClose={() => setSelectedId(null)}
           onToggleFavorite={toggleFavorite}
@@ -248,4 +416,9 @@ export default function App() {
       )}
     </div>
   )
+
+  function openVisibleAt(index: number) {
+    const item = visibleItems[index]
+    if (item) setSelectedId(item.id)
+  }
 }

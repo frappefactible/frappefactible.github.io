@@ -11,6 +11,10 @@ interface Props {
   inPlanner: boolean
   total: number
   reduced: boolean
+  canPrev: boolean
+  canNext: boolean
+  onPrev: () => void
+  onNext: () => void
   onTogglePlanner: (id: number) => void
   onClose: () => void
   onToggleFavorite: (id: number) => void
@@ -24,6 +28,10 @@ export function TicketModal({
   inPlanner,
   total,
   reduced,
+  canPrev,
+  canNext,
+  onPrev,
+  onNext,
   onTogglePlanner,
   onClose,
   onToggleFavorite,
@@ -34,13 +42,46 @@ export function TicketModal({
   const runAnime = useAnimeScope(root)
   const collection = collectionById[item.collection]
 
+  const restoreFocus = useRef<HTMLElement | null>(null)
+
+  useEffect(() => {
+    if (!restoreFocus.current) restoreFocus.current = document.activeElement as HTMLElement
+    return () => restoreFocus.current?.focus()
+  }, [])
+
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape') {
+        onClose()
+        return
+      }
+      if (event.key === 'ArrowLeft' && canPrev) {
+        event.preventDefault()
+        onPrev()
+      }
+      if (event.key === 'ArrowRight' && canNext) {
+        event.preventDefault()
+        onNext()
+      }
+      if (event.key === 'Tab') {
+        const focusables = root.current?.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input, textarea, select, a[href]',
+        )
+        if (!focusables?.length) return
+        const first = focusables[0]
+        const last = focusables[focusables.length - 1]
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  }, [onClose, onPrev, onNext, canPrev, canNext])
 
   useGSAP(
     () => {
@@ -75,7 +116,7 @@ export function TicketModal({
   }, [reduced, runAnime])
 
   return (
-    <div ref={root} className="fixed inset-0 z-[90] grid place-items-center p-3 md:p-6">
+    <div ref={root} tabIndex={-1} className="fixed inset-0 z-[90] grid place-items-center p-3 md:p-6 focus:outline-none">
       <button
         type="button"
         onClick={onClose}
@@ -120,6 +161,26 @@ export function TicketModal({
               </div>
             ))}
           </dl>
+
+          <div className="ticket-reveal mt-5 flex items-center justify-between gap-3 border-y border-white/10 py-2 mono">
+            <button
+              type="button"
+              onClick={onPrev}
+              disabled={!canPrev}
+              className="text-muted transition-colors hover:text-neon disabled:cursor-default disabled:opacity-30"
+            >
+              ← ANTERIOR
+            </button>
+            <span className="hidden text-muted/60 sm:inline">USA ← → PARA NAVEGAR</span>
+            <button
+              type="button"
+              onClick={onNext}
+              disabled={!canNext}
+              className="text-muted transition-colors hover:text-neon disabled:cursor-default disabled:opacity-30"
+            >
+              SIGUIENTE →
+            </button>
+          </div>
 
           <div className="ticket-reveal mt-6">
             <label htmlFor="ticket-note" className="mono text-neon">RESEÑA DE FACTIBLE</label>
