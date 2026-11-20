@@ -13,22 +13,40 @@ interface Props {
 const normalize = (value: string) =>
   value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 
-/** Carga una miniatura con CORS; si el servidor no lo permite, devuelve null. */
-const loadThumb = (src: string): Promise<HTMLImageElement | null> =>
-  new Promise((resolve) => {
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    const timer = window.setTimeout(() => resolve(null), 4000)
-    image.onload = () => {
-      window.clearTimeout(timer)
-      resolve(image)
+/** Carga una miniatura de forma segura para el canvas (sin contaminarlo). */
+const loadThumb = async (src: string): Promise<HTMLImageElement | null> => {
+  const loadImage = (url: string) =>
+    new Promise<HTMLImageElement | null>((resolve) => {
+      const image = new Image()
+      image.crossOrigin = 'anonymous'
+      const timer = window.setTimeout(() => resolve(null), 12000)
+      image.onload = () => {
+        window.clearTimeout(timer)
+        resolve(image)
+      }
+      image.onerror = () => {
+        window.clearTimeout(timer)
+        resolve(null)
+      }
+      image.src = url
+    })
+
+  // 1) fetch + blob: evita reutilizar la copia en caché sin cabeceras CORS.
+  try {
+    const response = await fetch(src, { mode: 'cors' })
+    if (response.ok) {
+      const blobUrl = URL.createObjectURL(await response.blob())
+      const image = await loadImage(blobUrl)
+      URL.revokeObjectURL(blobUrl)
+      if (image) return image
     }
-    image.onerror = () => {
-      window.clearTimeout(timer)
-      resolve(null)
-    }
-    image.src = src
-  })
+  } catch {
+    // Se prueba con la URL directa más abajo.
+  }
+
+  // 2) URL directa con cache-busting.
+  return loadImage(`${src}${src.includes('?') ? '&' : '?'}__cors=${Date.now()}`)
+}
 
 export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
   const [query, setQuery] = useState('')
@@ -130,18 +148,11 @@ export function Planner({ items, plannerIds, onAdd, onRemove, onOpen }: Props) {
 
         const thumb = thumbs[index]
         if (thumb) {
-          try {
-            ctx.drawImage(thumb, 70, y + 8, 64, rowHeight - 28)
-          } catch {
-            // Imagen no dibujable: se usa el bloque de color de abajo.
-          }
-        }
-        if (!thumb) {
-          ctx.fillStyle = `${collection.color}33`
+          ctx.drawImage(thumb, 70, y + 8, 64, rowHeight - 28)
+        } else {
+          // Si la imagen remota falla, bloque neutro: nunca un icono sustituto.
+          ctx.fillStyle = 'rgba(244,238,231,0.06)'
           ctx.fillRect(70, y + 8, 64, rowHeight - 28)
-          ctx.fillStyle = collection.color
-          ctx.font = '400 32px sans-serif'
-          ctx.fillText(collection.glyph, 86, y + 58)
         }
 
         ctx.fillStyle = '#ff2b2b'
