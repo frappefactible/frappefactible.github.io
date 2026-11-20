@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { animate, spring } from 'animejs'
 import { gsap, useGSAP } from '../lib/gsap'
 import { useAnimeScope } from '../hooks/useAnimeScope'
-import { collectionById, getOriginalTitle, getYear } from '../data/catalog'
+import { collectionById, getOriginalTitle, getYear, tmdbPaths } from '../data/catalog'
 import type { MediaItem, MediaStatus } from '../data/catalog'
 
 interface Props {
@@ -13,6 +13,8 @@ interface Props {
   reduced: boolean
   canPrev: boolean
   canNext: boolean
+  rating?: number
+  onRate: (id: number, rating: number) => void
   onPrev: () => void
   onNext: () => void
   onTogglePlanner: (id: number) => void
@@ -30,6 +32,8 @@ export function TicketModal({
   reduced,
   canPrev,
   canNext,
+  rating,
+  onRate,
   onPrev,
   onNext,
   onTogglePlanner,
@@ -41,6 +45,9 @@ export function TicketModal({
   const root = useRef<HTMLDivElement>(null)
   const runAnime = useAnimeScope(root)
   const collection = collectionById[item.collection]
+  const tmdbUrl = tmdbPaths[item.id]
+    ? `https://www.themoviedb.org${tmdbPaths[item.id]}`
+    : `https://www.themoviedb.org/search?query=${encodeURIComponent(getOriginalTitle(item) || item.title)}`
 
   const restoreFocus = useRef<HTMLElement | null>(null)
 
@@ -180,6 +187,43 @@ export function TicketModal({
             >
               SIGUIENTE →
             </button>
+          </div>
+
+          <div className="ticket-reveal mt-4 flex flex-wrap items-center gap-3">
+            <span className="mono text-muted">TU NOTA</span>
+            <div className="flex gap-1" role="group" aria-label="Valoración de 1 a 5 estrellas">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => onRate(item.id, star)}
+                  aria-label={`${star} estrellas`}
+                  aria-pressed={rating === star}
+                  className={`text-2xl leading-none transition-colors ${
+                    rating && star <= rating ? 'text-neon' : 'text-white/25 hover:text-bone'
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            {Boolean(rating) && (
+              <button
+                type="button"
+                onClick={() => onRate(item.id, 0)}
+                className="mono text-muted underline decoration-white/20 underline-offset-4 hover:text-neon"
+              >
+                QUITAR
+              </button>
+            )}
+            <a
+              href={tmdbUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mono ml-auto text-muted underline decoration-neon underline-offset-4 hover:text-neon"
+            >
+              ↗ VER EN TMDB
+            </a>
           </div>
 
           <div className="ticket-reveal mt-6">

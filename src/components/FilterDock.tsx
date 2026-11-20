@@ -3,6 +3,7 @@ import type { SortMode } from '../data/catalog'
 
 export type FormatFilter = 'Todos' | 'Películas' | 'Series' | 'Animes'
 export type StatusFilter = 'Todos' | 'Por ver' | 'Visto'
+export type ViewMode = 'grid' | 'list'
 
 interface Props {
   format: FormatFilter
@@ -16,6 +17,8 @@ interface Props {
   sort: SortMode
   onSort: (value: SortMode) => void
   searchRef: RefObject<HTMLInputElement | null>
+  view: ViewMode
+  onView: (value: ViewMode) => void
   count: number
   total: number
   onBeforeChange: () => void
@@ -43,6 +46,8 @@ export function FilterDock({
   sort,
   onSort,
   searchRef,
+  view,
+  onView,
   count,
   total,
   onBeforeChange,
@@ -137,6 +142,26 @@ export function FilterDock({
           >
             ♥
           </button>
+
+          <div className="flex gap-1">
+            {(['grid', 'list'] as ViewMode[]).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => change(onView, option)}
+                aria-label={option === 'grid' ? 'Vista de pósters' : 'Vista compacta'}
+                aria-pressed={view === option}
+                title={option === 'grid' ? 'Vista de pósters' : 'Vista compacta'}
+                className={`grid h-9 w-9 place-items-center border text-sm transition-colors ${
+                  view === option
+                    ? 'border-neon bg-neon/15 text-neon'
+                    : 'border-white/15 text-muted hover:text-bone'
+                }`}
+              >
+                {option === 'grid' ? '▦' : '☰'}
+              </button>
+            ))}
+          </div>
 
           <span className="mono whitespace-nowrap text-muted">
             <b className="text-neon">{String(count).padStart(2, '0')}</b> / {total}

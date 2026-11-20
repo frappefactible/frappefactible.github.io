@@ -27,6 +27,14 @@ export function StatsSection({ items, favorites, reduced }: Props) {
       { label: 'SERIES', value: items.filter((item) => item.type === 'Serie').length },
       { label: 'YA VISTOS', value: items.filter((item) => item.status === 'Visto').length },
       { label: 'FAVORITOS', value: favorites },
+      {
+        label: 'NOTA MEDIA',
+        value: (() => {
+          const rated = items.filter((item) => typeof item.rating === 'number' && item.rating > 0)
+          if (!rated.length) return 0
+          return Math.round((rated.reduce((sum, item) => sum + (item.rating ?? 0), 0) / rated.length) * 10) / 10
+        })(),
+      },
     ],
     [items, animeCount, favorites],
   )
@@ -65,7 +73,9 @@ export function StatsSection({ items, favorites, reduced }: Props) {
               duration: 1300,
               ease: 'out(3)',
               onUpdate: () => {
-                el.textContent = String(Math.round(state.value))
+                el.textContent = Number.isInteger(target)
+                  ? String(Math.round(state.value))
+                  : (Math.round(state.value * 10) / 10).toFixed(1)
               },
             })
           })
@@ -111,7 +121,7 @@ export function StatsSection({ items, favorites, reduced }: Props) {
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-px border border-white/10 bg-white/10 md:grid-cols-3 lg:grid-cols-6">
+        <div className="mt-12 grid grid-cols-2 gap-px border border-white/10 bg-white/10 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7">
           {metrics.map((metric) => (
             <div key={metric.label} className="bg-ink p-5">
               <div

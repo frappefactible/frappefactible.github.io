@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Flip } from './lib/gsap'
-import { catalog, getDisplayTitle, getYear } from './data/catalog'
-import type { CollectionId, MediaItem, MediaStatus, PlannerEntry, SortMode } from './data/catalog'
+import { catalog, collections, getDisplayTitle, getYear } from './data/catalog'
+import type { CollectionId, ItemOverride, MediaItem, MediaStatus, PlannerEntry, SortMode } from './data/catalog'
 import { usePersistentState } from './hooks/usePersistentState'
 import { useReducedMotion } from './hooks/useReducedMotion'
 import { useLenis } from './hooks/useLenis'
@@ -10,8 +10,9 @@ import { SiteHeader } from './components/SiteHeader'
 import { Hero } from './components/Hero'
 import { CollectionStrip } from './components/CollectionStrip'
 import { FilterDock } from './components/FilterDock'
-import type { FormatFilter, StatusFilter } from './components/FilterDock'
+import type { FormatFilter, StatusFilter, ViewMode } from './components/FilterDock'
 import { MediaGrid } from './components/MediaGrid'
+import { MediaListView } from './components/MediaListView'
 import { TicketModal } from './components/TicketModal'
 import { StatsSection } from './components/StatsSection'
 import { Planner } from './components/Planner'
@@ -19,8 +20,51 @@ import { Stickers } from './components/Stickers'
 import { DataBackup } from './components/DataBackup'
 import type { BackupData } from './components/DataBackup'
 
-type Overrides = Record<number, Partial<Pick<MediaItem, 'status' | 'note'>>>
+type Overrides = Record<number, ItemOverride>
 type LocalData = Omit<BackupData, 'version' | 'exportedAt'>
+interface InstallPromptEvent extends Event {
+  prompt: () => Promise<void>
+}
+
+const URL_FORMATS: FormatFilter[] = ['Todos', 'Películas', 'Series', 'Animes']
+const URL_STATUSES: StatusFilter[] = ['Todos', 'Por ver', 'Visto']
+const URL_SORTS: SortMode[] = ['archivo', 'anio', 'titulo', 'estado', 'favoritos']
+
+/** Lee filtros y ficha abierta desde la URL para poder compartirlos. */
+const readUrl = () => {
+  const result: {
+    tipo?: FormatFilter
+    estado?: StatusFilter
+    buscar?: string
+    coleccion?: CollectionId
+    favoritos?: boolean
+    orden?: SortMode
+    vista?: ViewMode
+    ficha?: number
+  } = {}
+  if (typeof window === 'undefined') return result
+  const params = new URLSearchParams(window.location.search)
+  const tipo = params.get('tipo')
+  const tipoMatch = URL_FORMATS.find((value) => value.toLowerCase() === tipo?.toLowerCase())
+  if (tipoMatch) result.tipo = tipoMatch
+  const estado = params.get('estado')
+  const estadoMatch = URL_STATUSES.find((value) => value.toLowerCase() === estado?.toLowerCase())
+  if (estadoMatch) result.estado = estadoMatch
+  const buscar = params.get('buscar')
+  if (buscar) result.buscar = buscar
+  const coleccion = params.get('coleccion')
+  if (coleccion && collections.some((item) => item.id === coleccion)) {
+    result.coleccion = coleccion as CollectionId
+  }
+  if (params.get('favoritos') === '1') result.favoritos = true
+  const orden = params.get('orden')
+  if (orden && URL_SORTS.includes(orden as SortMode)) result.orden = orden as SortMode
+  const vista = params.get('vista')
+  if (vista === 'grid' || vista === 'list') result.vista = vista
+  const ficha = window.location.hash.match(/^#ficha-(\d+)$/)
+  if (ficha) result.ficha = Number(ficha[1])
+  return result
+}
 
 const ANIME_TYPES = ['Anime', 'Película Anime', 'OVA', 'Manga']
 const normalize = (value: string) =>
@@ -66,14 +110,17 @@ export default function App() {
   const reduced = useReducedMotion()
   useLenis(!reduced)
 
+  const initialUrl = useMemo(readUrl, [])
   const [booting, setBooting] = useState(true)
-  const [format, setFormat] = useState<FormatFilter>('Todos')
-  const [status, setStatus] = useState<StatusFilter>('Todos')
-  const [query, setQuery] = useState('')
-  const [favoritesOnly, setFavoritesOnly] = useState(false)
-  const [collection, setCollection] = useState<CollectionId | null>(null)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [format, setFormat] = useState<FormatFilter>(initialUrl.tipo ?? 'Todos')
+  const [status, setStatus] = useState<StatusFilter>(initialUrl.estado ?? 'Todos')
+  const [query, setQuery] = useState(initialUrl.buscar ?? '')
+  const [favoritesOnly, setFavoritesOnly] = useState(initialUrl.favoritos ?? false)
+  const [collection, setCollection] = useState<CollectionId | null>(initialUrl.coleccion ?? null)
+  const [selectedId, setSelectedId] = useState<number | null>(initialUrl.ficha ?? null)
+  const [view, setView] = useState<ViewMode>(initialUrl.vista ?? 'grid')
   const [showTop, setShowTop] = useState(false)
+  const [installEvent, setInstallEvent] = useState<InstallPromptEvent | null>(null)
 
   const [favorites, setFavorites] = usePersistentState<number[]>('factible:favorites:v1', [])
   const [planner, setPlanner] = usePersistentState<PlannerEntry[]>(
@@ -82,8 +129,12 @@ export default function App() {
     revivePlanner,
   )
   const [overrides, setOverrides] = usePersistentState<Overrides>('factible:overrides:v1', {})
-  const [sort, setSort] = usePersistentState<SortMode>('factible:sort:v1', 'archivo')
+  const [sort, setSort] = usePersistentState<SortMode>('factible:sort:v1', initialUrl.orden ?? 'archivo')
   const [history, setHistory] = usePersistentState<number[]>('factible:roulette-history:v1', [])
+
+  useEffect(() => {
+    if (initialUrl.orden) setSort(initialUrl.orden)
+  }, [initialUrl.orden, setSort])
 
   const searchRef = useRef<HTMLInputElement>(null)
   const spinRef = useRef<(() => void) | null>(null)
@@ -159,6 +210,56 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [selectedId])
 
+  // La URL refleja siempre los filtros y la ficha abierta: se puede compartir.
+  useEffect(() => {
+    const params = new URLSearchParams()
+    if (format !== 'Todos') params.set('tipo', format)
+    if (status !== 'Todos') params.set('estado', status)
+    if (query.trim()) params.set('buscar', query.trim())
+    if (collection) params.set('coleccion', collection)
+    if (favoritesOnly) params.set('favoritos', '1')
+    if (sort !== 'archivo') params.set('orden', sort)
+    if (view !== 'grid') params.set('vista', view)
+    const search = params.toString()
+    const hash = selectedId ? `#ficha-${selectedId}` : ''
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${search ? `?${search}` : ''}${hash}`,
+    )
+  }, [format, status, query, collection, favoritesOnly, sort, view, selectedId])
+
+  useEffect(() => {
+    const onPop = () => {
+      const url = readUrl()
+      setFormat(url.tipo ?? 'Todos')
+      setStatus(url.estado ?? 'Todos')
+      setQuery(url.buscar ?? '')
+      setFavoritesOnly(url.favoritos ?? false)
+      setCollection(url.coleccion ?? null)
+      setSelectedId(url.ficha ?? null)
+      if (url.orden) setSort(url.orden)
+      if (url.vista) setView(url.vista)
+    }
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [setSort])
+
+  useEffect(() => {
+    const onPrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallEvent(event as InstallPromptEvent)
+    }
+    window.addEventListener('beforeinstallprompt', onPrompt)
+    return () => window.removeEventListener('beforeinstallprompt', onPrompt)
+  }, [])
+
+  const installApp = async () => {
+    if (!installEvent) return
+    await installEvent.prompt()
+    setInstallEvent(null)
+  }
+
   const toggleFavorite = useCallback(
     (id: number) => {
       captureFlip()
@@ -180,6 +281,18 @@ export default function App() {
   const changeNote = useCallback(
     (id: number, note: string) => {
       setOverrides((previous) => ({ ...previous, [id]: { ...previous[id], note } }))
+    },
+    [setOverrides],
+  )
+
+  const rateItem = useCallback(
+    (id: number, rating: number) => {
+      setOverrides((previous) => {
+        const current = { ...(previous[id] ?? {}) }
+        if (rating <= 0) delete current.rating
+        else current.rating = rating
+        return { ...previous, [id]: current }
+      })
     },
     [setOverrides],
   )
@@ -324,6 +437,8 @@ export default function App() {
               sort={sort}
               onSort={setSort}
               searchRef={searchRef}
+              view={view}
+              onView={setView}
               count={visibleItems.length}
               total={items.length}
               onBeforeChange={captureFlip}
@@ -345,7 +460,7 @@ export default function App() {
                   </button>
                 )}
               </div>
-            ) : (
+            ) : view === 'grid' ? (
               <MediaGrid
                 items={sortedCatalog}
                 visibleIds={visibleIds}
@@ -354,6 +469,14 @@ export default function App() {
                 onOpen={(item) => setSelectedId(item.id)}
                 onToggleFavorite={toggleFavorite}
                 reduced={reduced}
+              />
+            ) : (
+              <MediaListView
+                items={sortedCatalog}
+                visibleIds={visibleIds}
+                favorites={favorites}
+                onOpen={(item) => setSelectedId(item.id)}
+                onToggleFavorite={toggleFavorite}
               />
             )}
           </div>
@@ -378,6 +501,15 @@ export default function App() {
               <span>HECHO SIN BASE DE DATOS · SOLO ARCHIVOS Y UN POCO DE OBSESIÓN</span>
               <a href="#top" className="text-neon hover:underline">VOLVER ARRIBA ↑</a>
             </div>
+            {installEvent && (
+              <button
+                type="button"
+                onClick={installApp}
+                className="w-fit border border-neon px-4 py-2 mono text-neon transition-colors hover:bg-neon hover:text-ink"
+              >
+                ↓ INSTALAR APP
+              </button>
+            )}
             <DataBackup data={backupData} onImport={importBackup} onReset={resetAll} />
           </div>
         </footer>
@@ -405,6 +537,8 @@ export default function App() {
           reduced={reduced}
           canPrev={selectedIndex > 0}
           canNext={selectedIndex >= 0 && selectedIndex < visibleItems.length - 1}
+          rating={selected.rating}
+          onRate={rateItem}
           onPrev={() => openVisibleAt(selectedIndex - 1)}
           onNext={() => openVisibleAt(selectedIndex + 1)}
           onTogglePlanner={togglePlanner}

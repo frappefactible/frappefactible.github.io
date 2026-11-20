@@ -49,7 +49,11 @@ export interface MediaItem {
   /** Reseña breve de FACTIBLE; editable desde la ficha y guardada en localStorage. */
   note: string
   status: MediaStatus
+  /** Valoración personal de 1 a 5 estrellas (opcional). */
+  rating?: number
 }
+
+export type ItemOverride = Partial<Pick<MediaItem, 'status' | 'note' | 'rating'>>
 
 export const collections: Collection[] = [
   { id: 'accion',     name: 'Acción & Adrenalina', tagline: 'Pulso alto, frenos rotos',        color: '#FF3B30', glyph: '✦' },
@@ -61,6 +65,13 @@ export const collections: Collection[] = [
   { id: 'mente',      name: 'Mente & Realidad',    tagline: 'La cabeza también sangra',       color: '#FF3D9A', glyph: '◈' },
   { id: 'espiritu',   name: 'Espíritu & Comedia',  tagline: 'Respira, que también se vive',    color: '#FF8A5B', glyph: '❋' },
 ]
+
+/** Entradas con ficha propia en TMDB; el resto abre una búsqueda en TMDB. */
+export const tmdbPaths: Record<number, string> = {
+  94: '/tv/312949',
+  95: '/tv/45790/season/6',
+  96: '/tv/342045',
+}
 
 export const collectionById = Object.fromEntries(
   collections.map((c) => [c.id, c]),
