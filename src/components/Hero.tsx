@@ -121,15 +121,22 @@ export function Hero({ items, onOpen, reduced }: Props) {
       setActive(chosenIndex)
       setWinner(chosen)
       setSpinning(false)
-      runAnime(() => {
-        animate('.reel-chip.is-active', {
-          scale: [1, 1.14, 1],
-          ease: spring({ bounce: 0.5, duration: 560 }),
-        })
-      })
     }, 1450)
 
-    timers.current.push(interval, end)
+    // Espera a que React aplique el estado ganador antes de animar su fila.
+    const reveal = window.setTimeout(() => {
+      runAnime(() => {
+        const chip = root.current?.querySelector(`.reel-chip[data-id="${chosen.id}"]`)
+        if (chip) {
+          animate(chip, {
+            scale: [1, 1.14, 1],
+            ease: spring({ bounce: 0.5, duration: 560 }),
+          })
+        }
+      })
+    }, 1480)
+
+    timers.current.push(interval, end, reveal)
   }
 
   const reroll = () => {
@@ -240,6 +247,7 @@ export function Hero({ items, onOpen, reduced }: Props) {
               {candidates.map((candidate, index) => (
                 <div
                   key={candidate.id}
+                  data-id={candidate.id}
                   className={`mono truncate border-l-2 px-2 py-1.5 transition-all duration-200 ${
                     index === active
                       ? 'reel-chip is-active border-neon bg-neon/10 text-bone'
