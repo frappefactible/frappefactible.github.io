@@ -203,7 +203,7 @@ export function Hero({
   }
 
   return (
-    <section ref={root} id="top" className="film-grain relative overflow-hidden px-5 pb-16 pt-24 md:px-10 md:pb-24 md:pt-32">
+    <section ref={root} id="top" className="film-grain relative overflow-hidden px-5 pb-12 pt-16 md:px-10 md:pb-16 md:pt-20">
       {/* Halo de proyector */}
       <div className="pointer-events-none absolute -left-40 top-0 h-[600px] w-[600px] rounded-full bg-neon/10 blur-[140px]" />
       <div className="pointer-events-none absolute right-0 top-40 h-[420px] w-[420px] rounded-full bg-blood/20 blur-[120px]" />
@@ -215,13 +215,13 @@ export function Hero({
             DESCUBRE NUEVOS TITULOS
           </div>
 
-          <h1 className="display text-[clamp(4.2rem,12.5vw,11rem)] text-bone">
+          <h1 className="display text-[clamp(3.4rem,10.5vw,9rem)] text-bone">
             CREA TU
             <br />
             CARTELERA<span className="text-neon text-glow">.</span>
           </h1>
 
-          <div className="mt-8 flex max-w-xl flex-col gap-5 border-l border-neon/60 pl-6">
+          <div className="mt-6 flex max-w-xl flex-col gap-4 border-l border-neon/60 pl-6">
             <p className="text-sm leading-relaxed text-muted md:text-base">
               Mi lista de películas, series y animes por ver. Sin algoritmos que decidan por mí:
               una ruleta para los días de indecisión y un plan para no perderte nada.
@@ -236,7 +236,7 @@ export function Hero({
 
         <div className="grid items-stretch gap-6 sm:grid-cols-[1.1fr_0.9fr]">
           {/* Spotlight con tilt 3D */}
-          <div className="relative h-[520px] [perspective:900px] md:h-[560px]">
+          <div className="relative h-[460px] [perspective:900px] md:h-[480px]">
             <button
               type="button"
               onClick={() => spotlight && onOpen(spotlight)}
@@ -279,7 +279,7 @@ export function Hero({
           </div>
 
           {/* Ruleta */}
-          <div className="flex h-[520px] flex-col justify-between overflow-hidden border border-white/15 bg-ink-2/70 p-4 backdrop-blur md:h-[560px]">
+          <div className="flex h-[460px] flex-col justify-between overflow-hidden border border-white/15 bg-ink-2/70 p-4 backdrop-blur md:h-[480px]">
             <div>
               <div className="mono text-neon">¿QUÉ VEO HOY?</div>
               <p className="mt-2 text-xs leading-relaxed text-muted">
