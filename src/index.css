@@ -76,6 +76,20 @@ button { cursor: pointer; }
   to   { transform: translateX(-50%); }
 }
 
+@keyframes fav-glow {
+  0%, 100% {
+    box-shadow: 0 0 12px rgba(255, 43, 43, 0.6), 0 0 0 1px rgba(255, 43, 43, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 34px rgba(255, 43, 43, 1), 0 0 16px rgba(255, 43, 43, 0.85),
+      0 0 0 1px rgba(255, 43, 43, 1);
+  }
+}
+
+.fav-active {
+  animation: fav-glow 1.6s ease-in-out infinite;
+}
+
 /* --- Tipografía editorial --- */
 .display {
   font-family: var(--font-display);

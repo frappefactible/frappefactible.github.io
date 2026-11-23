@@ -444,6 +444,8 @@ export default function App() {
           onRemove={removeFromPlanner}
           onNote={changePlannerNote}
           onMove={movePlanner}
+          favorites={favorites}
+          onToggleFavorite={toggleFavorite}
           onOpen={(item) => setSelectedId(item.id)}
         />
 

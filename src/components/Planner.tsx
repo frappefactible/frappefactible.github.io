@@ -10,6 +10,8 @@ interface Props {
   onRemove: (id: number) => void
   onNote: (id: number, note: string) => void
   onMove: (from: number, to: number) => void
+  favorites: number[]
+  onToggleFavorite: (id: number) => void
   onOpen: (item: MediaItem) => void
 }
 
@@ -62,20 +64,26 @@ export function Planner({
   onRemove,
   onNote,
   onMove,
+  favorites,
+  onToggleFavorite,
   onOpen,
 }: Props) {
   const [query, setQuery] = useState('')
   const [busy, setBusy] = useState(false)
+  const [favoritosMode, setFavoritosMode] = useState(false)
   const [captureFormat, setCaptureFormat] = useState<CaptureFormat>('post')
   const dragIndex = useRef<number | null>(null)
 
   const chosen = useMemo(
     () =>
-      planner
-        .map((entry) => ({ entry, item: items.find((item) => item.id === entry.id) }))
-        .filter((row): row is { entry: PlannerEntry; item: MediaItem } => Boolean(row.item)),
-    [planner, items],
+      (favoritosMode
+        ? favorites.map((id) => ({ entry: { id, note: '' } as PlannerEntry, item: items.find((item) => item.id === id) }))
+        : planner.map((entry) => ({ entry, item: items.find((item) => item.id === entry.id) }))
+      ).filter((row): row is { entry: PlannerEntry; item: MediaItem } => Boolean(row.item)),
+    [favoritosMode, favorites, planner, items],
   )
+
+  const captureTitle = favoritosMode ? ['MIS TITULOS', 'FAVORITOS'] : ['LO QUE AHORA', 'ESTOY VIENDO']
 
   const results = useMemo(() => {
     const term = normalize(query.trim())
@@ -152,8 +160,8 @@ export function Planner({
 
     ctx.fillStyle = '#f4eee7'
     ctx.font = '400 80px Anton, Impact, sans-serif'
-    ctx.fillText('LO QUE AHORA', 48, 196)
-    ctx.fillText('ESTOY VIENDO', 48, 278)
+    ctx.fillText(captureTitle[0], 48, 196)
+    ctx.fillText(captureTitle[1], 48, 278)
 
     ctx.fillStyle = '#ff2b2b'
     ctx.font = '500 14px "DM Mono", monospace'
@@ -252,34 +260,9 @@ export function Planner({
     }
   }
 
-  const share = async () => {
-    if (!chosen.length) return
-    setBusy(true)
-    try {
-      const blob = await getBlob(captureFormat)
-      if (!blob) return
-      const file = new File([blob], fileName, { type: 'image/png' })
-      if (navigator.share && navigator.canShare?.({ files: [file] })) {
-        try {
-          await navigator.share({
-            files: [file],
-            title: 'Mi cartelera personal',
-            text: 'Mi cartelera personal favorita <3',
-          })
-          return
-        } catch {
-          // El usuario canceló: se descarga igual.
-        }
-      }
-      saveBlob(blob)
-    } finally {
-      setBusy(false)
-    }
-  }
-
   const copyList = async () => {
     const text = [
-      'MI CARTELERA PERSONAL FAVORITA <3',
+      favoritosMode ? 'MIS TITULOS FAVORITOS' : 'MI CARTELERA PERSONAL FAVORITA <3',
       ...chosen.map(
         ({ entry, item }, index) =>
           `${index + 1}. ${getDisplayTitle(item)}${entry.note.trim() ? ` — ${entry.note.trim()}` : ''}`,
@@ -371,14 +354,20 @@ export function Planner({
 
           <div className="min-w-0 border border-white/10 bg-ink p-5">
             <div className="flex items-center justify-between">
-              <div className="mono text-muted">LO QUE AHORA ESTOY VIENDO</div>
+              <div className="mono text-muted">
+                {favoritosMode ? 'MIS TITULOS FAVORITOS' : 'LO QUE AHORA ESTOY VIENDO'}
+              </div>
               <div className="mono text-neon">{String(chosen.length).padStart(2, '0')}</div>
             </div>
 
             {chosen.length === 0 ? (
               <div className="mt-8 border border-dashed border-white/15 py-14 text-center">
                 <div className="display text-3xl text-muted">SALA VACÍA</div>
-                <p className="mt-2 text-xs text-muted">Busca un título y añádelo a tu plan.</p>
+                <p className="mt-2 text-xs text-muted">
+                  {favoritosMode
+                    ? 'Marca títulos con ♥ para verlos aquí.'
+                    : 'Busca un título y añádelo a tu plan.'}
+                </p>
               </div>
             ) : (
               <ol className="mt-3 space-y-2">
@@ -387,7 +376,7 @@ export function Planner({
                   return (
                     <li
                       key={entry.id}
-                      draggable
+                      draggable={!favoritosMode}
                       onDragStart={(event) => {
                         dragIndex.current = index
                         animate(event.currentTarget, {
@@ -404,7 +393,9 @@ export function Planner({
                           ease: spring({ bounce: 0.5, duration: 400 }),
                         })
                       }}
-                      className="flex cursor-grab items-center gap-3 border-l-2 bg-white/[0.03] p-2 active:cursor-grabbing"
+                      className={`flex items-center gap-3 border-l-2 bg-white/[0.03] p-2 ${
+                        favoritosMode ? '' : 'cursor-grab active:cursor-grabbing'
+                      }`}
                       style={{ borderColor: collection.color }}
                     >
                       <span className="mono w-6 shrink-0 text-neon">{String(index + 1).padStart(2, '0')}</span>
@@ -416,38 +407,48 @@ export function Planner({
                         <span className="mono mt-1 block truncate text-muted">
                           {item.type} · {getYear(item)}
                         </span>
-                        <input
-                          value={entry.note}
-                          onChange={(event) => onNote(entry.id, event.target.value)}
-                          placeholder="nota (capítulo, día…)"
-                          aria-label={`Nota para ${getDisplayTitle(item)}`}
-                          className="mt-1 w-full border-b border-white/10 bg-transparent pb-0.5 mono text-xs text-bone placeholder:text-muted/60 focus:border-neon focus:outline-none"
-                        />
+                        {!favoritosMode && (
+                          <input
+                            value={entry.note}
+                            onChange={(event) => onNote(entry.id, event.target.value)}
+                            placeholder="nota (capítulo, día…)"
+                            aria-label={`Nota para ${getDisplayTitle(item)}`}
+                            className="mt-1 w-full border-b border-white/10 bg-transparent pb-0.5 mono text-xs text-bone placeholder:text-muted/60 focus:border-neon focus:outline-none"
+                          />
+                        )}
                       </div>
-                      <div className="flex shrink-0 flex-col gap-1">
-                        <button
-                          type="button"
-                          onClick={() => onMove(index, Math.max(0, index - 1))}
-                          disabled={index === 0}
-                          aria-label="Subir en la lista"
-                          className="grid h-6 w-8 place-items-center border border-white/15 text-xs text-muted hover:border-neon hover:text-neon disabled:opacity-30"
-                        >
-                          ↑
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onMove(index, Math.min(chosen.length - 1, index + 1))}
-                          disabled={index === chosen.length - 1}
-                          aria-label="Bajar en la lista"
-                          className="grid h-6 w-8 place-items-center border border-white/15 text-xs text-muted hover:border-neon hover:text-neon disabled:opacity-30"
-                        >
-                          ↓
-                        </button>
-                      </div>
+                      {!favoritosMode && (
+                        <div className="flex shrink-0 flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => onMove(index, Math.max(0, index - 1))}
+                            disabled={index === 0}
+                            aria-label="Subir en la lista"
+                            className="grid h-6 w-8 place-items-center border border-white/15 text-xs text-muted hover:border-neon hover:text-neon disabled:opacity-30"
+                          >
+                            ↑
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onMove(index, Math.min(chosen.length - 1, index + 1))}
+                            disabled={index === chosen.length - 1}
+                            aria-label="Bajar en la lista"
+                            className="grid h-6 w-8 place-items-center border border-white/15 text-xs text-muted hover:border-neon hover:text-neon disabled:opacity-30"
+                          >
+                            ↓
+                          </button>
+                        </div>
+                      )}
                       <button
                         type="button"
-                        onClick={() => onRemove(entry.id)}
-                        aria-label={`Quitar ${getDisplayTitle(item)} del plan`}
+                        onClick={() =>
+                          favoritosMode ? onToggleFavorite(entry.id) : onRemove(entry.id)
+                        }
+                        aria-label={
+                          favoritosMode
+                            ? `Quitar ${getDisplayTitle(item)} de favoritos`
+                            : `Quitar ${getDisplayTitle(item)} del plan`
+                        }
                         className="grid h-9 w-9 shrink-0 place-items-center border border-white/15 text-muted transition-colors hover:border-neon hover:text-neon"
                       >
                         ×
@@ -488,11 +489,15 @@ export function Planner({
               </button>
               <button
                 type="button"
-                onClick={share}
-                disabled={!chosen.length || busy}
-                className="border border-neon/60 px-5 py-3 mono text-neon transition-colors hover:bg-neon/10 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() => setFavoritosMode((active) => !active)}
+                aria-pressed={favoritosMode}
+                className={`px-5 py-3 mono transition-all ${
+                  favoritosMode
+                    ? 'fav-active bg-neon text-ink'
+                    : 'border border-neon/60 text-neon hover:bg-neon/10'
+                }`}
               >
-                ↗ COMPARTIR
+                ♥ FAVORITOS
               </button>
               <button
                 type="button"
@@ -502,7 +507,7 @@ export function Planner({
               >
                 ⧉ COPIAR TEXTO
               </button>
-              {chosen.length > 0 && (
+              {chosen.length > 0 && !favoritosMode && (
                 <button
                   type="button"
                   onClick={() => [...chosen].forEach((row) => onRemove(row.entry.id))}
