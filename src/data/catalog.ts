@@ -72,6 +72,9 @@ export const tmdbPaths: Record<number, string> = {
   94: '/tv/312949',
   95: '/tv/45790/season/6',
   96: '/tv/342045',
+  98: '/tv/13916-death-note',
+  99: '/tv/61223',
+  100: '/movie/152601-her',
 }
 
 export const collectionById = Object.fromEntries(
@@ -106,18 +109,18 @@ const rows: CatalogRow[] = [
   [16, "[サイバーパンク: エッジランナーズ] Cyberpunk: Edgerunners (2022)", "Anime", "cyberpunk", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/lqcDVZ8pyk08AVftMBildDR3QUK.jpg", "Neón, cromo y una caída inevitable. El anime cyberpunk más brutal de los recientes."], // Por ver
   [17, "[Mars Express] Mars Express (2023)", "Película", "cyberpunk", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/aEC0dFieUjpkveilI9GQdTfUFc9.jpg", "Marte, una IA y un cuerpo prestado. Ciencia ficción con prisa y corazón."], // Por ver
   [18, "[PSYCHO-PASS サイコパス] Psycho-Pass (2012)", "Anime", "cyberpunk", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/xHFMsGXdjXJDXMQvHhh7owu7TGr.jpg", "Un sistema que te juzga antes de que pienses. Distopía policial impecable."], // Por ver
-  [19, "[Minority Report] Minority Report (2002)", "Anime", "mente", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/pnzJEfXpRc1bknR5ASFG0MZcTvo.jpg", "Precrimen y libre albedrío. Spielberg filmando nuestra ansiedad futura."], // Por ver
+  [19, "[Minority Report] Minority Report (2002)", "Película", "mente", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/pnzJEfXpRc1bknR5ASFG0MZcTvo.jpg", "Precrimen y libre albedrío. Spielberg filmando nuestra ansiedad futura."], // Por ver
   [20, "[GANGSTA.] GANGSTA. (2015)", "Película Anime", "crimen", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/ly43ajQpjpYYnx3w5BgFtcflUTD.jpg", "Pandilleros, música y ciudad podrida. Anime con sabor a serie negra."], // Por ver
   [21, "[Serbian Scars] Cicatrices Serbias (2009)", "Película", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/igsaXntB4xW6M5w1wAChwn6DggD.jpg", "Balcanes, humor negro y minas. La guerra contada con risa incómoda."], // Por ver
   [22, "[Технотајз: Едит и ја] Technotise: Edit & I (2009)", "Película", "cyberpunk", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/wSGbVkWZEl3556M1bia8rk5jWnn.jpg", "Serbia animada con ácido. Cyberpunk casero con personalidad desbordada."], // Por ver
   [23, "[BLACK LAGOON] Black Lagoon (2006)", "Anime", "crimen", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/sQlHhWScg6qmakL1ywtcjjVKKqV.jpg", "Río, mercenarios y ninguna regla. Black Lagoon es puro caos con encanto."], // Por ver
   [24, "[ヨルムンガンド] Jormungand (2012)", "Anime", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/2v886zu4uziTmmtjRWXaWjf1QeU.jpg", "Mercenarios globales con sonrisa de acero. Estrategia y cinismo a partes iguales."], // Por ver
-  [25, "[Лучшие в аду] The Best in Hell (2022)", "OVA", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/2x1swT7xOyYZAdsKO3GclVcYrR3.jpg", "Infierno, trincheras y humor negro animado. Impacta sin hacer ruido."], // Por ver
+  [25, "[Лучшие в аду] The Best in Hell (2022)", "Película", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/2x1swT7xOyYZAdsKO3GclVcYrR3.jpg", "Infierno, trincheras y humor negro animado. Impacta sin hacer ruido."], // Por ver
   [26, "[GATE（ゲート）自衛隊 彼の地にて、斯く戦えり] GATE (2015)", "Anime", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/bCuJkIUg1n9etSYrrQKlQuSrigE.jpg", "Un ejército moderno en un mundo de magia. GATE engancha por su mezcla rara."], // Por ver
   [27, "[機動戦士ガンダム 第08MS小隊] Mobile Suit Gundam: The 08th MS Team (1996)", "Anime", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/tzr1YdnPSIWMMgyb6Uzi3f9I8p3.jpg", "Guerra total desde la trinchera y el cockpit. Mecha con peso humano."], // Por ver
   [28, "[幼女戦記] Saga of Tanya the Evil (2017)", "Anime", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/slamFBuUGFtL4LtWpS9qXQ1qSLl.jpg", "La niña en el cuerpo de un estratega. Sátira militar con garras."], // Por ver
   [29, "[Axis Powers ヘタリア] Hetalia: Axis Powers (2009)", "Anime", "guerra", "https://image.tmdb.org/t/p/original/kJfZKulii7UKa880BLQ7WlzUwCA.jpg", "Naciones antropomórficas en guerra. Ridículo y brillante a la vez."], // Por ver
-  [30, "[将国のアルタイル] Altair: A Record of Battles (2017)", "Película", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/g8LNOGIqvzpMlb6XzmJhY46j1t5.jpg", "Estrategia, honor y un mapa que se mueve. Épica otomana animada."], // Por ver
+  [30, "[将国のアルタイル] Altair: A Record of Battles (2017)", "Anime", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/g8LNOGIqvzpMlb6XzmJhY46j1t5.jpg", "Estrategia, honor y un mapa que se mueve. Épica otomana animada."], // Por ver
   [31, "[OPPENHEIMER] Oppenheimer (2023)", "Película", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/5t05uhX5ULn8Um2f1ZuznVvIffU.jpg", "Fisión, ego y tres horas de reloj. El retrato más incómodo del poder."], // Por ver
   [32, "[CHERNOBYL] Chernobyl (2019)", "Película", "desolacion", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/hlLXt2tOPT6RRnjiUmoxyG1LTFi.jpg", "Una central, una mentira y una ciudad entera en cuestión. Doloroso y necesario."], // Por ver
   [33, "[Empire of the Sun] Empire of the Sun (1987)", "Película", "guerra", "https://image.tmdb.org/t/p/w600_and_h900_bestv2/6s0RoC4LuRNKnVWeQ3gq5J8uprN.jpg", "Un niño, un campamento y una guerra que no entiende. Clásico de Spielberg."], // Por ver
@@ -185,6 +188,9 @@ const rows: CatalogRow[] = [
   [95, "[STEEL BALL RUN] JoJo's Bizarre Adventure: Steel Ball Run (2026)", "Anime", "accion", "https://image.tmdb.org/t/p/original/yB2cUOuT3OMGtU3CTLQjuFUL8Ox.jpg", "Caballos, stands y una carrera cruzando América. JoJo cambia de marcha."], // Por ver
   [96, "[サイバーパンク エッジランナーズ2] Cyberpunk: Edgerunners 2 (2026)", "Anime", "cyberpunk", "https://image.tmdb.org/t/p/original/w3XGb8zwhiq9sUEGWCPY0ZNOWmh.jpg", "Night City vuelve a morder. Nueva historia, mismo neón letal."], // Por ver
   [97, "[SCP:GALLIONIC] SCP: Gallionic (2026)", "Anime", "demonios", "https://i.ytimg.com/vi/RSbPdf3CGD8/maxresdefault.jpg", "Cortometraje indie: una brecha, dos hermanos y algo que no debería existir."], // Por ver
+  [98, "[デスノート] Death Note (2006)", "Anime", "mente", "https://image.tmdb.org/t/p/original/z85wVUR32PrvHfope9Xbn0kD68u.jpg", "Un cuaderno, un nombre y una moralidad que se resquebraja. Thriller letal."], // Por ver
+  [99, "[アカメが斬る！] Akame ga Kill! (2014)", "Anime", "demonios", "https://image.tmdb.org/t/p/original/pPpUEVN9229LGwvYwcHNCmX7hxJ.jpg", "Asesinos, tiranos y muertes que no avisan. Acción sin respiración."], // Por ver
+  [100, "[Her] Her (2013)", "Película", "desolacion", "https://image.tmdb.org/t/p/original/n1sY9uAsQKOus91A4FtvN3JdHYH.jpg", "Una voz, una máquina y una soledad que aprende a querer. Dulce y desolador."], // Por ver
 ]
 
 const SEEN_IDS = new Set<number>([9, 12, 55, 70, 84])
