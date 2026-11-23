@@ -196,7 +196,7 @@ export function TicketModal({
                   key={star}
                   type="button"
                   onClick={() => onRate(item.id, star)}
-                  aria-label={`${star} estrellas`}
+                  aria-label={`★ ${star} estrellas`}
                   aria-pressed={rating === star}
                   className={`text-2xl leading-none transition-colors ${
                     rating && star <= rating ? 'text-neon' : 'text-white/25 hover:text-bone'
@@ -285,7 +285,7 @@ export function TicketModal({
           type="button"
           onClick={onClose}
           className="absolute -right-3 -top-3 z-20 grid h-9 w-9 place-items-center border border-neon bg-ink text-lg text-neon hover:bg-neon hover:text-ink"
-          aria-label="Cerrar"
+          aria-label="× Cerrar ficha"
         >
           ×
         </button>

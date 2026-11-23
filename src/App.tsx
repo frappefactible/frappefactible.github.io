@@ -41,8 +41,8 @@ const readUrl = () => {
   const tipo = params.get('tipo')
   const tipoMatch = URL_FORMATS.find((value) => value.toLowerCase() === tipo?.toLowerCase())
   if (tipoMatch) result.tipo = tipoMatch
-  const estado = params.get('estado')
-  const estadoMatch = URL_STATUSES.find((value) => value.toLowerCase() === estado?.toLowerCase())
+  const estado = params.get('estado')?.toLowerCase().replace(/-/g, ' ') ?? ''
+  const estadoMatch = URL_STATUSES.find((value) => value.toLowerCase() === estado)
   if (estadoMatch) result.estado = estadoMatch
   const buscar = params.get('buscar')
   if (buscar) result.buscar = buscar
@@ -465,7 +465,6 @@ export default function App() {
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' })}
-          aria-label="Volver arriba"
           className="fixed bottom-5 left-5 z-40 border border-neon bg-ink px-3 py-3 mono text-neon transition-colors hover:bg-neon hover:text-ink"
         >
           ↑ ARRIBA

@@ -113,7 +113,7 @@ export function StatsSection({ items, favorites, reduced }: Props) {
       })
       return () => trigger.kill()
     },
-    { scope: sectionRef, dependencies: [metricsKey, reduced] },
+    { scope: sectionRef, dependencies: [metricsKey, reduced], revertOnUpdate: true },
   )
 
   return (

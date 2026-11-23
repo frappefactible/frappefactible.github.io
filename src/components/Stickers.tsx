@@ -100,10 +100,10 @@ export function Stickers({ reduced }: Props) {
     <div
       ref={root}
       className="pointer-events-none fixed bottom-5 right-5 z-50 hidden flex-col items-end gap-2 sm:flex"
-      aria-label="Reacciones arrastrables"
+      aria-label="ARRASTRA LAS REACCIONES ↘"
     >
       <div className="sticker-bounds pointer-events-none fixed inset-0" aria-hidden="true" />
-      <span className="mono border border-neon/30 bg-ink px-2 py-1 text-neon/80">ARRASTRA LAS REACCIONES ↘</span>
+      <span className="mono border border-neon/30 bg-ink px-2 py-1 text-neon">ARRASTRA LAS REACCIONES ↘</span>
       <div className="flex items-center gap-2">
         {REACTIONS.map((reaction) => (
           <div key={reaction.src} className="sticker pointer-events-auto" title={reaction.label}>

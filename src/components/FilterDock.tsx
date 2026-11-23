@@ -103,7 +103,6 @@ export function FilterDock({
           <select
             value={sort}
             onChange={(event) => change(onSort, event.target.value as SortMode)}
-            aria-label="Ordenar títulos"
             className="border border-white/15 bg-ink px-2 py-2 mono text-bone focus:border-neon focus:outline-none"
           >
             {sorts.map((option) => (
@@ -133,7 +132,7 @@ export function FilterDock({
             type="button"
             onClick={() => change(onFavoritesOnly, !favoritesOnly)}
             aria-pressed={favoritesOnly}
-            aria-label="Mostrar solo favoritos"
+            aria-label="♥ Mostrar solo favoritos"
             className={`border px-3 py-2 text-lg leading-none transition-colors ${
               favoritesOnly
                 ? 'border-neon bg-neon/15 text-neon'
@@ -149,7 +148,6 @@ export function FilterDock({
                 key={option}
                 type="button"
                 onClick={() => change(onView, option)}
-                aria-label={option === 'grid' ? 'Vista de pósters' : 'Vista compacta'}
                 aria-pressed={view === option}
                 title={option === 'grid' ? 'Vista de pósters' : 'Vista compacta'}
                 className={`grid h-9 w-9 place-items-center border text-sm transition-colors ${

@@ -8,7 +8,7 @@ export function SiteHeader({ total, favorites, seen }: Props) {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-ink/85 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-[1600px] items-center justify-between gap-4 px-5 md:px-10">
-        <a href="#top" className="group flex items-center gap-3" aria-label="Ir al inicio">
+        <a href="#top" className="group flex items-center gap-3" title="Ir al inicio">
           <span className="grid h-9 w-9 place-items-center bg-neon font-display text-xl leading-none text-ink transition-transform duration-300 group-hover:-rotate-6">
             F
           </span>

@@ -25,7 +25,7 @@ export function MediaCard({ item, favorite, visible, onOpen, onToggleFavorite }:
         type="button"
         onClick={() => onOpen(item)}
         className="absolute inset-0 z-[3] block h-full w-full text-left"
-        aria-label={`Abrir ficha de ${getDisplayTitle(item)}`}
+        title={`Abrir ficha de ${getDisplayTitle(item)}`}
       >
         {failed ? (
           <div

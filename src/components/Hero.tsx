@@ -33,9 +33,6 @@ const shuffle = <T,>(array: T[]): T[] => {
   return copy
 }
 
-const pickRandom = (pool: MediaItem[]): MediaItem =>
-  pool[Math.floor(Math.random() * pool.length)]
-
 export function Hero({
   items,
   format,
@@ -74,10 +71,10 @@ export function Hero({
   const fresh = contextual.filter((item) => !recent.includes(item.id))
   const roulettePool = fresh.length ? fresh : contextual
   const usingFallback = contextual.length === 0 && pending.length > 0
-  // Sugerencia aleatoria en cada carga de página (prioriza títulos pendientes).
-  const [spotlight, setSpotlight] = useState<MediaItem>(() =>
-    pickRandom(pending.length ? pending : items),
-  )
+  // Sugerencia fija del mes: JoJo's Bizarre Adventure: Steel Ball Run.
+  const spotlight = items.find((item) => item.id === 95) ?? items[0]
+  // El hero se muestra a ~300 px: usar w780 ahorra ~666 KB frente a `original`.
+  const spotlightImage = spotlight.imageUrl.replace('/t/p/original/', '/t/p/w780/')
 
   const [candidates, setCandidates] = useState<MediaItem[]>(() => shuffle(pending).slice(0, 5))
   const [active, setActive] = useState(0)
@@ -124,7 +121,7 @@ export function Hero({
         el.removeEventListener('pointerleave', onLeave)
       }
     },
-    { scope: root, dependencies: [reduced] },
+    { scope: root, dependencies: [reduced], revertOnUpdate: true },
   )
 
   const spin = () => {
@@ -186,22 +183,6 @@ export function Hero({
 
   spinRef.current = spin
 
-  const reroll = () => {
-    const others = items.filter((item) => item.id !== spotlight.id && item.status === 'Por ver')
-    const pool = others.length ? others : items.filter((item) => item.id !== spotlight.id)
-    setSpotlight(pickRandom(pool))
-    if (!reduced) {
-      runAnime(() => {
-        if (spotlightRef.current) {
-          animate(spotlightRef.current, {
-            scale: [0.92, 1],
-            ease: spring({ bounce: 0.5, duration: 600 }),
-          })
-        }
-      })
-    }
-  }
-
   return (
     <section ref={root} id="top" className="film-grain relative overflow-hidden px-5 pb-12 pt-16 md:px-10 md:pb-16 md:pt-20">
       {/* Halo de proyector */}
@@ -241,14 +222,14 @@ export function Hero({
               type="button"
               onClick={() => spotlight && onOpen(spotlight)}
               className="group block h-full w-full text-left"
-              aria-label={`Abrir ficha de ${getDisplayTitle(spotlight)}`}
+              title={`Abrir ficha de ${getDisplayTitle(spotlight)}`}
             >
               <div
                 ref={spotlightRef}
                 className="poster-card relative h-full w-full overflow-hidden border border-white/15 [transform-style:preserve-3d]"
               >
                 <img
-                  src={spotlight.imageUrl}
+                  src={spotlightImage}
                   alt={getDisplayTitle(spotlight)}
                   className="h-full w-full object-cover"
                   loading="eager"
@@ -262,19 +243,9 @@ export function Hero({
                   </div>
                 </div>
                 <div className="absolute left-3 top-3 z-10 border border-neon bg-ink/80 px-2 py-1 mono text-neon">
-                  SUGERENCIA DEL DÍA
+                  SUGERENCIA DEL MES
                 </div>
               </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={reroll}
-              aria-label="Ver otra sugerencia"
-              title="Otra sugerencia"
-              className="absolute right-3 top-3 z-20 grid h-9 w-9 place-items-center border border-neon bg-ink/90 text-lg text-neon transition-colors hover:bg-neon hover:text-ink"
-            >
-              ↻
             </button>
           </div>
 
@@ -300,7 +271,7 @@ export function Hero({
                   return (
                     <div
                       key={`empty-${index}`}
-                      className="reel-chip mono flex h-9 items-center border-l-2 border-white/5 px-2 text-muted/30"
+                      className="reel-chip mono flex h-9 items-center border-l-2 border-white/5 px-2 text-muted"
                       aria-hidden="true"
                     >
                       {String(index + 1).padStart(2, '0')} —
@@ -314,7 +285,7 @@ export function Hero({
                     className={`reel-chip mono flex h-9 items-start gap-2 border-l-2 px-2 py-1 transition-all duration-200 ${
                       index === active
                         ? 'is-active border-neon bg-neon/10 text-bone'
-                        : 'border-white/10 text-muted/70'
+                        : 'border-white/10 text-muted'
                     }`}
                     title={candidate.title}
                   >

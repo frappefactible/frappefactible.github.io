@@ -26,10 +26,10 @@ export function MediaListView({ items, visibleIds, favorites, onOpen, onToggleFa
             className="grid grid-cols-[36px_48px_1fr_auto] items-center gap-3 border-b border-white/[0.06] px-3 py-2 transition-colors hover:bg-white/[0.04] md:grid-cols-[52px_64px_1fr_80px_120px_90px] md:px-4"
           >
             <span className="mono text-muted">#{String(item.id).padStart(3, '0')}</span>
-            <button type="button" onClick={() => onOpen(item)} aria-label={`Abrir ficha de ${getDisplayTitle(item)}`}>
+            <button type="button" onClick={() => onOpen(item)} title={`Abrir ficha de ${getDisplayTitle(item)}`}>
               <img src={item.imageUrl} alt="" loading="lazy" className="h-16 w-11 object-cover md:h-14" />
             </button>
-            <button type="button" onClick={() => onOpen(item)} className="min-w-0 text-left">
+            <button type="button" onClick={() => onOpen(item)} className="min-w-0 text-left" title={`Abrir ficha de ${getDisplayTitle(item)}`}>
               <span className="block truncate font-display text-base uppercase leading-none text-bone md:text-lg">
                 {getDisplayTitle(item)}
               </span>
