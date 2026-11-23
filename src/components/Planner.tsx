@@ -108,6 +108,20 @@ export function Planner({
     const ctx = canvas.getContext('2d')
     if (!ctx) return canvas
 
+    const logo = await new Promise<HTMLImageElement | null>((resolve) => {
+      const image = new Image()
+      const timer = window.setTimeout(() => resolve(null), 5000)
+      image.onload = () => {
+        window.clearTimeout(timer)
+        resolve(image)
+      }
+      image.onerror = () => {
+        window.clearTimeout(timer)
+        resolve(null)
+      }
+      image.src = '/logos/factible_script.png'
+    })
+
     ctx.fillStyle = '#08080a'
     ctx.fillRect(0, 0, width, height)
 
@@ -121,17 +135,20 @@ export function Planner({
     ctx.lineWidth = 3
     ctx.strokeRect(12, 12, width - 24, height - 24)
 
-    ctx.fillStyle = '#ff2b2b'
-    ctx.fillRect(48, 48, 60, 60)
-    ctx.fillStyle = '#08080a'
-    ctx.font = '400 42px Anton, Impact, sans-serif'
-    ctx.fillText('F', 66, 92)
-    ctx.fillStyle = '#f4eee7'
-    ctx.font = '400 30px Anton, Impact, sans-serif'
-    ctx.fillText('FACTIBLE', 124, 84)
+    if (logo) {
+      ctx.save()
+      ctx.filter = 'brightness(1.6) saturate(1.1)'
+      const logoHeight = 52
+      ctx.drawImage(logo, 48, 48, logoHeight * (logo.width / logo.height), logoHeight)
+      ctx.restore()
+    } else {
+      ctx.fillStyle = '#ff2b2b'
+      ctx.font = '400 34px Anton, Impact, sans-serif'
+      ctx.fillText('FACTIBLE', 48, 95)
+    }
     ctx.fillStyle = '#8c8781'
     ctx.font = '500 13px "DM Mono", monospace'
-    ctx.fillText('MI CARTELERA PERSONAL FAVORITA <3', 124, 105)
+    ctx.fillText('MI CARTELERA PERSONAL FAVORITA <3', 48, 118)
 
     ctx.fillStyle = '#f4eee7'
     ctx.font = '400 80px Anton, Impact, sans-serif'
